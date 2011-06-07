@@ -27,7 +27,7 @@ sub value {
     my $date_completed = $datetime->strftime('%F %H:');
     my @builds = Genome::Model::Build->get(
         run_by => 'apipe-builder',
-        status => 'Scheduled',
+        status => 'Abandoned',
         'date_completed like' => "$date_completed%",
     );
     return @builds ? scalar @builds : 0;

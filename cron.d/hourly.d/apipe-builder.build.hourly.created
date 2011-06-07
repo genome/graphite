@@ -12,6 +12,7 @@ my $graphite = AnyEvent::Graphite->new(
     port => '2003',
 );
 
+print join("\t", name(), value(), timestamp()) . "\n";
 $graphite->send(name(), value(), timestamp());
 $graphite->finish();
 
@@ -21,13 +22,13 @@ sub name {
 }
 
 sub value {
-    my $minute = DateTime::Duration->new(minutes => 1);
-    my $datetime = DateTime->now - $minute;
+    my $hour = DateTime::Duration->new(hours => 1);
+    my $datetime = DateTime->now(time_zone => 'America/Chicago') - $hour;
     my $date_completed = $datetime->strftime('%F %H:');
     my @builds = Genome::Model::Build->get(
         run_by => 'apipe-builder',
         status => 'Created',
-        'date_completed like' => "$datetime%",
+        'date_completed like' => "$date_completed%",
     );
     return @builds ? scalar @builds : 0;
 }
