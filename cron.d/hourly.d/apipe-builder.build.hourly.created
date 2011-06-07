@@ -16,7 +16,8 @@ $graphite->send(name(), value(), timestamp());
 $graphite->finish();
 
 sub name {
-    return __FILE__;
+    my ($file) = __FILE__ =~ /([^\/]*$)/;
+    return $file;
 }
 
 sub value {

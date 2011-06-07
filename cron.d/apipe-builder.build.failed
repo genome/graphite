@@ -12,11 +12,13 @@ my $graphite = AnyEvent::Graphite->new(
     port => '2003',
 );
 
+print join("\t", name(), value(), timestamp()) . "\n";
 $graphite->send(name(), value(), timestamp());
 $graphite->finish();
 
 sub name {
-    return __FILE__;
+    my ($file) = __FILE__ =~ /([^\/]*$)/;
+    return $file;
 }
 
 sub value {
