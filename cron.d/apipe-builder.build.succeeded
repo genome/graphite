@@ -12,6 +12,7 @@ my $graphite = AnyEvent::Graphite->new(
     port => '2003',
 );
 
+print join("\t", name(), value(), timestamp()) . "\n";
 $graphite->send(name(), value(), timestamp());
 $graphite->finish();
 
@@ -23,7 +24,7 @@ sub name {
 sub value {
     my @builds = Genome::Model::Build->get(
         run_by => 'apipe-builder',
-        status => 'Created',
+        status => 'Succeeded',
     );
     return @builds ? scalar @builds : 0;
 }
