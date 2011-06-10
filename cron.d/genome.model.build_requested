@@ -12,6 +12,7 @@ my $graphite = AnyEvent::Graphite->new(
     port => '2003',
 );
 
+print join("\t", name(), value(), timestamp()) . "\n";
 $graphite->send(name(), value(), timestamp());
 $graphite->finish();
 
@@ -21,10 +22,9 @@ sub name {
 }
 
 sub value {
-    my @models = Genome::Model->get(
-        build_requested => 1,
-    );
-    return @models ? scalar @models : 0;
+    my $output = qx{sqlrun --instance=warehouse "select count(*) from mg.genome_model gm where gm.build_requested = 1" | head -n 3 | tail -n 1};
+    my ($count) = $output =~ /^(\d+)/;
+    return $count;
 }
 
 sub timestamp {
