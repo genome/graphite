@@ -1,0 +1,2 @@
+#!/usr/bin/bash
+exec setuidgid nnutter multilog t ./main
