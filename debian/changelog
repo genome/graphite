@@ -1,0 +1,5 @@
+apipe-metrics-daemon (0v0.1-1) unstable; urgency=low
+
+  * Initial package.
+
+ -- Nathan Nutter <nnutter@genome.wustl.edu>  Wed, 29 Jun 2011 17:25:00 +0000
