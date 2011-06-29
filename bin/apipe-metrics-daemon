@@ -7,6 +7,7 @@ use AnyEvent;
 use AnyEvent::Graphite;
 use DateTime;
 use GSCApp;
+use Genome;
 
 use strict;
 use warnings;
@@ -28,11 +29,31 @@ sub init {
 
 
 sub start_daemon {
+    my $now      = DateTime->now(time_zone => 'America/Chicago');
+    my $hours    = DateTime::Duration->new(hours   => $now->hour);
+    my $minutes  = DateTime::Duration->new(minutes => $now->minute);
+    my $seconds  = DateTime::Duration->new(seconds => $now->second);
+
+    my $hour   = DateTime::Duration->new(hours => 1);
+    my $day    = DateTime::Duration->new(days  => 1);
+    my $minute = DateTime::Duration->new(minutes => 1);
+
+    # docs say time zone should be UTC in order to add/subtract correctly
+    $now->set_time_zone('UTC');
+
+    my $next_hour = $now - $minutes - $seconds + $hour;
+    my $next_day  = $now - $hours - $minutes - $seconds + $day;
+    my $next_min  = $now - $seconds + $minute;
+
+    my $day_delay  = $next_day->subtract_datetime_absolute($now)->seconds;
+    my $hour_delay = $next_hour->subtract_datetime_absolute($now)->seconds;
+    my $min_delay  = $next_min->subtract_datetime_absolute($now)->seconds;
+
     my $exit_program = AnyEvent->signal(signal => "INT", cb => sub { cleanup(); exit 1 });
     my $done = AnyEvent->condvar;
-    my $every_day    = AnyEvent->timer(interval => 86400, cb => \&every_day   );
-    my $every_hour   = AnyEvent->timer(interval => 3600,  cb => \&every_hour  );
-    my $every_minute = AnyEvent->timer(interval => 60,    cb => \&every_minute);
+    my $every_day    = AnyEvent->timer(after => $day_delay,  interval => 86400, cb => \&every_day   );
+    my $every_hour   = AnyEvent->timer(after => $hour_delay, interval => 3600,  cb => \&every_hour  );
+    my $every_minute = AnyEvent->timer(after => $min_delay,  interval => 60,    cb => \&every_minute);
     $done->recv;
 }
 
@@ -58,6 +79,7 @@ sub cleanup {
     $dbh->disconnect if ($dbh);
     $graphite->finish if ($graphite);
 }
+
 
 sub parse_sqlrun_count {
     my $sql = shift;
