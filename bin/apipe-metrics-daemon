@@ -8,6 +8,7 @@ use AnyEvent::Graphite;
 use DateTime;
 use GSCApp;
 use Genome;
+use Log::Log4perl qw(:easy);
 
 use strict;
 use warnings;
@@ -15,6 +16,7 @@ use warnings;
 
 our $dbh;
 our $graphite;
+our $logger;
 
 init();
 start_daemon();
@@ -23,6 +25,10 @@ cleanup();
 
 sub init {
     $dbh = db_connect();
+    Log::Log4perl->easy_init(
+        { level => 'INFO', category => '???', file => '/var/log/apipe-metrics-daemon.log' }
+    );
+    $logger = Log::Log4perl->get_logger();
     $graphite = AnyEvent::Graphite->new(host => '10.0.3.64', port => '2003');
     return 1;
 }
@@ -61,7 +67,7 @@ sub start_daemon {
 sub graphite_send {
     my $metric = shift;
     my ($name, $value, $timestamp) = main->$metric;
-    print join("\t", $name, $value, $timestamp) . "\n";
+    $logger->info(join("\t", $name, $value, $timestamp));
     return $graphite->send($name, $value, $timestamp);
 }
 
