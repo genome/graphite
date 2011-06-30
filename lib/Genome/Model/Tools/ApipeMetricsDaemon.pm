@@ -200,7 +200,7 @@ sub builds_prior_daily_status {
     my $timeshift = DateTime::Duration->new(days => 1, hours => $datetime->hour, minutes => $datetime->minute, seconds => $datetime->second);
     $datetime -= $timeshift; # Looking at the last complete day
 
-    my $name = join('.', 'new', 'builds', 'daily_' . lc($status));
+    my $name = join('.', 'builds', 'daily_' . lc($status));
     my $timestamp = $datetime->strftime("%s");
 
     my $date_completed = $datetime->strftime('%F');
@@ -243,7 +243,7 @@ sub builds_prior_hour_status {
     my $timeshift = DateTime::Duration->new(hours => 1, minutes => $datetime->minute, seconds => $datetime->second);
     $datetime -= $timeshift; # Looking at the last complete hour
 
-    my $name = join('.', 'new', 'builds', 'hourly_' . lc($status));
+    my $name = join('.', 'builds', 'hourly_' . lc($status));
     my $timestamp = $datetime->strftime("%s");
 
     my $date_completed = $datetime->strftime('%F %H:');
@@ -293,7 +293,7 @@ sub every_minute {
 
 sub builds_current_status {
     my $status = shift;
-    my $name = join('.', 'new', 'builds', 'current_' . lc($status));
+    my $name = join('.', 'builds', 'current_' . lc($status));
     my $timestamp = DateTime->now->strftime("%s");
     my $value = parse_sqlrun_count("select count(distinct(gm.genome_model_id)) from mg.genome_model gm where exists (select * from mg.genome_model_build gmb where gmb.model_id = gm.genome_model_id and exists (select * from mg.genome_model_event gme where gme.event_type = 'genome model build' and gme.build_id = gmb.build_id and gme.event_status = '$status' and gme.user_name = 'apipe-builder'))");
     return ($name, $value, $timestamp);
@@ -316,7 +316,7 @@ sub builds_current_unstartable {
 
 sub lsf_queue_status {
     my ($queue, $status) = @_;
-    my $name = join('.', 'new', 'lsf', $queue, lc($status));
+    my $name = join('.', 'lsf', $queue, lc($status));
     my $timestamp = DateTime->now->strftime("%s");
     my $bjobs_output = qx(bjobs -u apipe-builder -q $queue 2> /dev/null | grep ^[0-9] | grep $status | wc -l);
     my ($value) = $bjobs_output =~ /^(\d+)/;
@@ -351,25 +351,25 @@ sub lsf_blades_pend {
 }
 
 sub models_build_requested {
-    my $name = join('.', 'new', 'models', 'build_requested');
+    my $name = join('.', 'models', 'build_requested');
     my $timestamp = DateTime->now->strftime("%s");
     my $value = parse_sqlrun_count("select count(*) from mg.genome_model gm where gm.build_requested = 1");
     return ($name, $value, $timestamp);
 }
 sub models_build_requested_first_build {
-    my $name = join('.', 'new', 'models', 'build_requested_first_build');
+    my $name = join('.', 'models', 'build_requested_first_build');
     my $timestamp = DateTime->now->strftime("%s");
     my $value = parse_sqlrun_count("select count(*) from mg.genome_model gm where gm.build_requested = 1 and not exists (select * from mg.genome_model_build gmb where gmb.model_id = gm.genome_model_id)");
     return ($name, $value, $timestamp);
 }
 sub models_buildless {
-    my $name = join('.', 'new', 'models', 'buildless');
+    my $name = join('.', 'models', 'buildless');
     my $timestamp = DateTime->now->strftime("%s");
     my $value = parse_sqlrun_count("select count(*) from mg.genome_model gm where gm.build_requested != 1 and gm.user_name = 'apipe-builder' and not exists (select * from mg.genome_model_build gmb where gmb.model_id = gm.genome_model_id)");
     return ($name, $value, $timestamp);
 }
 sub models_failed {
-    my $name = join('.', 'new', 'models', 'failed');
+    my $name = join('.', 'models', 'failed');
     my $timestamp = DateTime->now->strftime("%s");
     my $value = parse_sqlrun_count("select count(distinct(gm.genome_model_id)) from mg.genome_model gm where exists (select * from mg.genome_model_build gmb where gmb.model_id = gm.genome_model_id and exists (select * from mg.genome_model_event gme where gme.event_type = 'genome model build' and gme.build_id = gmb.build_id and gme.event_status = 'Failed' and gme.user_name = 'apipe-builder'))");
     return ($name, $value, $timestamp);
