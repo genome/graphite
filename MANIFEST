@@ -1,6 +1,7 @@
 Build.PL
 INSTALL
 lib/Genome/Model/Tools/ApipeMetricsDaemon.pm
+upstart/apipe-metrics-daemon.conf
 LICENSE
 MANIFEST			This list of files
 MANIFEST.SKIP

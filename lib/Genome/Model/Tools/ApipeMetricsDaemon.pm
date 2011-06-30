@@ -18,7 +18,7 @@ class Genome::Model::Tools::ApipeMetricsDaemon {
         log_file => {
             is => 'Text',
             doc => 'path to log file',
-            default => '/var/log/apipe-metrics-daemon.log',
+            default => '/var/log/apipe-metrics-daemon/apipe-metrics-daemon.log',
         },
         log_level => {
             is => 'Text',

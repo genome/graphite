@@ -2,10 +2,10 @@ Source: apipe-metrics-daemon
 Section: systems
 Priority: extra
 Maintainer: Nathan Nutter <nnutter@genome.wustl.edu>
-Build-Depends: debhelper (>= 7.4), perl (>= 5.10), libmodule-build-perl
+Build-Depends: debhelper (>= 7.4), perl (>= 5.10), libmodule-build-perl, libanyevent-perl
 
 Package: apipe-metrics-daemon
 Architecture: all
-Depends: ${misc:Depends}, libgenome-perl
+Depends: libgenome-perl, libanyevent-perl
 Description: APipe Metrics Daemon
  Collects metrics and reporting to Graphite at apipe-metrics.gsc.wustl.edu.

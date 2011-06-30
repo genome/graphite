@@ -1,4 +1,8 @@
 #!/usr/bin/make -f
 
 %:
+	PATH="/bin:/usr/bin"; \
 	/usr/bin/env dh $@
+
+override_dh_auto_test:
+	

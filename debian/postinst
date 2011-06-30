@@ -1,0 +1,4 @@
+#!/bin/sh -e
+mkdir -p /var/log/apipe-metrics-daemon
+chmod 775 /var/log/apipe-metrics-daemon
+chown root:apipe /var/log/apipe-metrics-daemon
