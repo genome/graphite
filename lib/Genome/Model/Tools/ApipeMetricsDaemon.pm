@@ -1,40 +1,121 @@
-#!/usr/bin/env perl
+package Genome::Model::Tools::ApipeMetricsDaemon;
 
 use strict;
 use warnings;
 
+use lib '/gscuser/nnutter/lib/gsc_bin_perl_5.8.7/lib/perl5';
 use AnyEvent;
 use AnyEvent::Graphite;
 use DateTime;
-use GSCApp;
 use Genome;
 use Log::Log4perl qw(:easy);
 
-use strict;
-use warnings;
+
+class Genome::Model::Tools::ApipeMetricsDaemon {
+    is => 'Command::V2',
+    doc => 'apipe-metrics-daemon collects data periodically and reports it to graphite',
+    has => [
+        log_file => {
+            is => 'Text',
+            doc => 'path to log file',
+            default => '/var/log/apipe-metrics-daemon.log',
+        },
+        log_level => {
+            is => 'Text',
+            doc => 'log level',
+            valid_values => ['TRACE', 'DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL', 'ALL', 'OFF'],
+            default => 'INFO',
+        },
+        graphite_host => {
+            is => 'Text',
+            doc => 'graphite host',
+            default => '10.0.3.64',
+        },
+        graphite_port => {
+            is => 'Integer',
+            doc => 'graphite port',
+            default => 2003,
+        },
+    ],
+    has_optional => [
+        _dbh => {
+            is => 'Text',
+            doc => 'database handle'
+        },
+        _graphite => {
+            is => 'Text',
+            doc => 'graphite handle'
+        },
+        _logger => {
+            is => 'Text',
+            doc => 'logger handle'
+        },
+    ],
+};
 
 
-our $dbh;
-our $graphite;
-our $logger;
-
-init();
-start_daemon();
-cleanup();
+sub help_synopsis {
+    return 'apipe-metrics-daemon collects data periodically and reports it to graphite' . "\n";
+}
 
 
-sub init {
-    $dbh = db_connect();
-    Log::Log4perl->easy_init(
-        { level => 'INFO', category => '???', file => '/var/log/apipe-metrics-daemon.log' }
-    );
-    $logger = Log::Log4perl->get_logger();
-    $graphite = AnyEvent::Graphite->new(host => '10.0.3.64', port => '2003');
+sub help_detail {
+    return <<EOS
+apipe-metrics-daemon collects data periodically and reports it to graphite running internally on apipe-metrics.gsc.wustl.edu
+The source is available at (https://github.com/genome/graphite) and via a submodule of Genome.git.
+EOS
+}
+
+
+sub execute {
+    my $self = shift;
+    $self->init();
+    $self->start_daemon();
+    $self->cleanup();
     return 1;
 }
 
 
+sub init {
+    my $self = shift;
+
+    $self->_logger($self->init_logger);
+    die "Failed to initialize logger.\n" unless $self->_logger->isa('Log::Log4perl::Logger');
+
+    $self->_graphite(AnyEvent::Graphite->new(host => $self->graphite_host, port => $self->graphite_port));
+    die "Failed to get Graphite connection.\n" unless $self->_graphite->isa('AnyEvent::Graphite');
+
+    $self->db_connect();
+    unless ($self->_dbh) {
+        $self->cleanup();
+        die "Failed to get DB connection.\n";
+    }
+    return 1;
+}
+
+
+sub init_logger {
+    my $self = shift;
+    (my $category = __PACKAGE__) =~ s/\:\:/./g;
+    my $log_file = $self->log_file;
+    my $log_level = $self->log_level;
+    my @conf = (
+        "log4perl.category.$category = $log_level, Logfile",
+        'log4perl.appender.Logfile = Log::Log4perl::Appender::File',
+        "log4perl.appender.Logfile.filename = $log_file",
+        'log4perl.appender.Logfile.layout = Log::Log4perl::Layout::PatternLayout',
+        'log4perl.appender.Logfile.layout.ConversionPattern = %d %m %n',
+    );
+    my $conf = join("\n", @conf);
+    Log::Log4perl::init(\$conf);
+    my $logger = Log::Log4perl->get_logger(__PACKAGE__);
+    return $logger;
+}
+
+
 sub start_daemon {
+    my $self = shift;
+    $self->_logger->info('Starting daemon...');
     my $now      = DateTime->now(time_zone => 'America/Chicago');
     my $hours    = DateTime::Duration->new(hours   => $now->hour);
     my $minutes  = DateTime::Duration->new(minutes => $now->minute);
@@ -55,35 +136,40 @@ sub start_daemon {
     my $hour_delay = $next_hour->subtract_datetime_absolute($now)->seconds;
     my $min_delay  = $next_min->subtract_datetime_absolute($now)->seconds;
 
-    my $exit_program = AnyEvent->signal(signal => "INT", cb => sub { cleanup(); exit 1 });
+    my $exit_program = AnyEvent->signal(signal => "INT", cb => sub { $self->cleanup; exit 255 });
     my $done = AnyEvent->condvar;
-    my $every_day    = AnyEvent->timer(after => $day_delay,  interval => 86400, cb => \&every_day   );
-    my $every_hour   = AnyEvent->timer(after => $hour_delay, interval => 3600,  cb => \&every_hour  );
-    my $every_minute = AnyEvent->timer(after => $min_delay,  interval => 60,    cb => \&every_minute);
+    my $every_day    = AnyEvent->timer(after => $day_delay,  interval => 86400, cb => sub { $self->every_day });
+    my $every_hour   = AnyEvent->timer(after => $hour_delay, interval => 3600,  cb => sub { $self->every_hour });
+    my $every_minute = AnyEvent->timer(after => $min_delay,  interval => 60,    cb => sub { $self->every_minute });
     $done->recv;
 }
 
 
 sub graphite_send {
+    my $self = shift;
     my $metric = shift;
-    my ($name, $value, $timestamp) = main->$metric;
-    $logger->info(join("\t", $name, $value, $timestamp));
-    return $graphite->send($name, $value, $timestamp);
+    my ($name, $value, $timestamp) = $self->$metric;
+    my $log_name = $name . ' 'x(50 - length($name));
+    my $log_value = $value . ' 'x(15 - length($value));
+    $self->_logger->info(join("\t", $log_name, $log_value, $timestamp));
+    return $self->_graphite->send($name, $value, $timestamp);
 }
 
 
 sub db_connect {
-    App->init;
-    $dbh = App::DB->dbh;
-    die "Failed to connect to the database!\n" unless $dbh;
-    return $dbh;
+    my $self = shift;
+    my $dbh = Genome::DataSource::GMSchema->get_default_handle();
+    $self->_dbh($dbh);
+    die "Failed to connect to the database!\n" unless $self->_dbh;
+    return 1;
 }
 
 
 sub cleanup {
-    $dbh->rollback if ($dbh);
-    $dbh->disconnect if ($dbh);
-    $graphite->finish if ($graphite);
+    my $self = shift;
+    $self->_dbh->rollback if ($self->_dbh);
+    $self->_dbh->disconnect if ($self->_dbh);
+    $self->_graphite->finish if ($self->_graphite);
 }
 
 
@@ -99,9 +185,11 @@ sub parse_sqlrun_count {
 ###################
 
 sub every_day {
-    graphite_send('builds_daily_failed');
-    graphite_send('builds_daily_succeeded');
-    graphite_send('builds_daily_unstartable');
+    my $self = shift;
+    $self->_logger->info('every_day');
+    $self->graphite_send('builds_daily_failed');
+    $self->graphite_send('builds_daily_succeeded');
+    $self->graphite_send('builds_daily_unstartable');
     return 1;
 }
 
@@ -140,9 +228,11 @@ sub builds_daily_unstartable {
 ####################
 
 sub every_hour {
-    graphite_send('builds_hourly_failed');
-    graphite_send('builds_hourly_succeeded');
-    graphite_send('builds_hourly_unstartable');
+    my $self = shift;
+    $self->_logger->info('every_hour');
+    $self->graphite_send('builds_hourly_failed');
+    $self->graphite_send('builds_hourly_succeeded');
+    $self->graphite_send('builds_hourly_unstartable');
     return 1;
 }
 
@@ -181,21 +271,23 @@ sub builds_hourly_unstartable {
 ######################
 
 sub every_minute {
-    graphite_send('builds_current_failed');
-    graphite_send('builds_current_running');
-    graphite_send('builds_current_scheduled');
-    graphite_send('builds_current_succeeded');
-    graphite_send('builds_current_unstartable');
-    graphite_send('lsf_workflow_run');
-    graphite_send('lsf_workflow_pend');
-    graphite_send('lsf_alignment_run');
-    graphite_send('lsf_alignment_pend');
-    graphite_send('lsf_blades_run');
-    graphite_send('lsf_blades_pend');
-    graphite_send('models_build_requested');
-    graphite_send('models_build_requested_first_build');
-    graphite_send('models_buildless');
-    graphite_send('models_failed');
+    my $self = shift;
+    $self->_logger->info('every_minute');
+    $self->graphite_send('builds_current_failed');
+    $self->graphite_send('builds_current_running');
+    $self->graphite_send('builds_current_scheduled');
+    $self->graphite_send('builds_current_succeeded');
+    $self->graphite_send('builds_current_unstartable');
+    $self->graphite_send('lsf_workflow_run');
+    $self->graphite_send('lsf_workflow_pend');
+    $self->graphite_send('lsf_alignment_run');
+    $self->graphite_send('lsf_alignment_pend');
+    $self->graphite_send('lsf_blades_run');
+    $self->graphite_send('lsf_blades_pend');
+    $self->graphite_send('models_build_requested');
+    $self->graphite_send('models_build_requested_first_build');
+    $self->graphite_send('models_buildless');
+    $self->graphite_send('models_failed');
     return 1;
 }
 
