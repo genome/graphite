@@ -71,14 +71,14 @@ my $build = $class->new(
   install_path => {
       'upstart' => '/etc/init',
   },
-  build_requires => {
-    'UR' => '0.29',
-    'Genome' => '0.06',
-  },
-  requires => {
-    'Genome' => '0.06',
-  },
-  bindoc_dirs => ['cmd-bindoc'],
+#  build_requires => {
+#    'UR' => '0.29',
+#    'Genome' => '0.06',
+#  },
+#  requires => {
+#    'Genome' => '0.06',
+#  },
+#  bindoc_dirs => ['cmd-bindoc'],
 );
 
 $build->add_build_element('upstart');
