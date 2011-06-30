@@ -1,0 +1,25 @@
+---
+abstract: 'find mutations of significance in cancer'
+author: []
+build_requires:
+  Genome: 0.04
+  UR: 0.26
+configure_requires:
+  Module::Build: 0.36
+generated_by: 'Module::Build version 0.3607'
+license: lgpl
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: 1.4
+name: Genome-Model-Tools-ApipeMetricsDaemon
+provides:
+  Genome::Model::Tools::ApipeMetricsDaemon:
+    file: lib/Genome/Model/Tools/ApipeMetricsDaemon.pm
+    version: 1.0
+requires:
+  Genome: 0.06
+  Statistics::Distributions: ''
+  Text::CSV_XS: ''
+resources:
+  license: http://opensource.org/licenses/lgpl-license.php
+version: 1.0
