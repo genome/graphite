@@ -9,5 +9,5 @@ stop on runlevel [!2345]
 
 script
     GMT=$(/gsc/scripts/sbin/gsc-cron-user which gmt)
-    exec setuidgid apipe-builder /gsc/scripts/sbin/gsc-cron-user perl -I /usr/share/perl5 $GMT apipe-metrics-daemon
+    exec sudo -i -u apipe-builder /gsc/scripts/sbin/gsc-cron-user perl -I /usr/share/perl5 $GMT apipe-metrics-daemon
 end script
