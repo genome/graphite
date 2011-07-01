@@ -29,7 +29,7 @@ class Genome::Model::Tools::ApipeMetricsDaemon {
         graphite_host => {
             is => 'Text',
             doc => 'graphite host',
-            default => '10.0.3.64',
+            default => '10.0.28.195',
         },
         graphite_port => {
             is => 'Integer',
