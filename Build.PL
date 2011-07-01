@@ -67,19 +67,6 @@ my $build = $class->new(
   license => 'lgpl',
   dist_version => '1.0.2',
   dist_abstract => 'collect and report metrics to graphite',
-  upstart_files => { 'upstart/apipe-metrics-daemon.conf' => 'upstart/apipe-metrics-daemon.conf' },
-  install_path => {
-      'upstart' => '/etc/init',
-  },
-#  build_requires => {
-#    'UR' => '0.29',
-#    'Genome' => '0.06',
-#  },
-#  requires => {
-#    'Genome' => '0.06',
-#  },
-#  bindoc_dirs => ['cmd-bindoc'],
 );
 
-$build->add_build_element('upstart');
 $build->create_build_script;
