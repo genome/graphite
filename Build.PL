@@ -65,7 +65,7 @@ EOS
 my $build = $class->new(
   module_name => 'Genome::Model::Tools::ApipeMetricsDaemon',
   license => 'lgpl',
-  dist_version => '1.0',
+  dist_version => '1.0.1',
   dist_abstract => 'collect and report metrics to graphite',
   upstart_files => { 'upstart/apipe-metrics-daemon.conf' => 'upstart/apipe-metrics-daemon.conf' },
   install_path => {
