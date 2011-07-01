@@ -1,3 +1,10 @@
+apipe-metrics-daemon (1.0.3) unstable; urgency=low
+
+  * display graphite host and port at startup (in log)
+  * internal changes on how upstart is run and installed
+
+ -- Nathan Nutter <nnutter@genome.wustl.edu>  Wed, 29 Jun 2011 19:00:00 +0000
+
 apipe-metrics-daemon (1.0.2) unstable; urgency=low
 
   * switched default graphite host to apipe-metrics
