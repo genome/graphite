@@ -116,6 +116,7 @@ sub init_logger {
 sub start_daemon {
     my $self = shift;
     $self->_logger->info('Starting daemon...');
+    $self->_logger->info('Metrics will be sent to ' . $self->graphite_host . ':' . $self->graphite_port . '...');
     my $now      = DateTime->now(time_zone => 'America/Chicago');
     my $hours    = DateTime::Duration->new(hours   => $now->hour);
     my $minutes  = DateTime::Duration->new(minutes => $now->minute);
