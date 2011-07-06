@@ -176,7 +176,15 @@ sub cleanup {
 
 sub parse_sqlrun_count {
     my $sql = shift;
-    my $output = qx{sqlrun --instance=warehouse "$sql" | head -n 3 | tail -n 1};
+    my $instance = 'warehouse';
+    if(@_) {
+        $instance = shift;
+    }
+    my $instance_str = '';
+    if ($instance) {
+        $instance_str = "--instance=$instance";
+    }
+    my $output = qx{sqlrun $instance_str "$sql" | head -n 3 | tail -n 1};
     my ($value) = $output =~ /^(\d+)/;
     return $value;
 }
@@ -279,6 +287,7 @@ sub every_minute {
     $self->graphite_send('builds_current_scheduled');
     $self->graphite_send('builds_current_succeeded');
     $self->graphite_send('builds_current_unstartable');
+    $self->graphite_send('lims_qidfgm_inprogress');
     $self->graphite_send('lsf_workflow_run');
     $self->graphite_send('lsf_workflow_pend');
     $self->graphite_send('lsf_alignment_run');
@@ -313,6 +322,13 @@ sub builds_current_succeeded {
 }
 sub builds_current_unstartable {
     return builds_current_status('Unstartable');
+}
+
+sub lims_qidfgm_inprogress {
+    my $name = join('.', 'lims', 'qidfgm_inprogress');
+    my $timestamp = DateTime->now->strftime("%s");
+    my $value = parse_sqlrun_count( q{SELECT COUNT(*) FROM gsc.process_step_executions WHERE ps_ps_id = 3733 AND psesta_pse_status = 'inprogress'}, undef );
+    return ($name, $value, $timestamp);
 }
 
 sub lsf_queue_status {
