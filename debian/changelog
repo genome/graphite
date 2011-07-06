@@ -1,3 +1,10 @@
+apipe-metrics-daemon (1.0.4) unstable; urgency=low
+
+  * move log_dir creation into pre-start rather than deb postinst
+  * Add a stat for how many QIDFGMs are queued up for BQM's perusal.
+
+ -- Nathan Nutter <nnutter@genome.wustl.edu>  Wed, 29 Jun 2011 19:00:00 +0000
+
 apipe-metrics-daemon (1.0.3) unstable; urgency=low
 
   * display graphite host and port at startup (in log)
