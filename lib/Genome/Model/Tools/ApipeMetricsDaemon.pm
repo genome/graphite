@@ -82,8 +82,10 @@ sub init {
     $self->_logger($self->init_logger);
     die "Failed to initialize logger.\n" unless $self->_logger->isa('Log::Log4perl::Logger');
 
-    $self->_graphite(AnyEvent::Graphite->new(host => $self->graphite_host, port => $self->graphite_port));
-    die "Failed to get Graphite connection.\n" unless $self->_graphite->isa('AnyEvent::Graphite');
+    if ($self->graphite_host ne '0.0.0.0') {
+        $self->_graphite(AnyEvent::Graphite->new(host => $self->graphite_host, port => $self->graphite_port));
+        die "Failed to get Graphite connection.\n" unless $self->_graphite->isa('AnyEvent::Graphite');
+    }
 
     $self->db_connect();
     unless ($self->_dbh) {
@@ -153,7 +155,12 @@ sub graphite_send {
     my $log_name = $name . ' 'x(50 - length($name));
     my $log_value = $value . ' 'x(15 - length($value));
     $self->_logger->info(join("\t", $log_name, $log_value, $timestamp));
-    return $self->_graphite->send($name, $value, $timestamp);
+    if ($self->_graphite) {
+        return $self->_graphite->send($name, $value, $timestamp);
+    }
+    else {
+        return 1;
+    }
 }
 
 
