@@ -192,7 +192,7 @@ sub parse_sqlrun_count {
         $instance_str = "--instance=$instance";
     }
     my $output = qx{sqlrun $instance_str "$sql" | head -n 3 | tail -n 1};
-    my ($value) = $output =~ /^(\d+)/;
+    my ($value) = $output =~ /^([\d\.]+)/;
     return $value;
 }
 
@@ -305,6 +305,10 @@ sub every_minute {
     $self->graphite_send('models_build_requested_first_build');
     $self->graphite_send('models_buildless');
     $self->graphite_send('models_failed');
+    $self->graphite_send('free_disk_space_info_genome_models');
+    $self->graphite_send('free_disk_space_info_alignments');
+    $self->graphite_send('total_disk_space_info_genome_models');
+    $self->graphite_send('total_disk_space_info_alignments');
     return 1;
 }
 
@@ -396,5 +400,61 @@ sub models_failed {
     my $name = join('.', 'models', 'failed');
     my $timestamp = DateTime->now->strftime("%s");
     my $value = parse_sqlrun_count("select count(distinct(gm.genome_model_id)) from mg.genome_model gm where exists (select * from mg.genome_model_build gmb where gmb.model_id = gm.genome_model_id and exists (select * from mg.genome_model_event gme where gme.event_type = 'genome model build' and gme.build_id = gmb.build_id and gme.event_status = 'Failed' and gme.user_name = 'apipe-builder'))");
+    return ($name, $value, $timestamp);
+}
+
+sub get_free_space_for_disk_group {
+    my $group = shift;
+    my $value = parse_sqlrun_count(
+        "select cast((sum(greatest(v.unallocated_kb - ceil(least((total_kb * .05), 1073741824)), 0)) / 1073741824) as number(10,4)) free_space " .
+        "from gsc.disk_volume\@oltp v " .
+        "join gsc.disk_volume_group\@oltp dvg on dvg.dv_id = v.dv_id " .
+        "join gsc.disk_group\@oltp g on g.dg_id = dvg.dg_id " .
+        "where g.disk_group_name = '$group' " .
+        "and v.can_allocate = 1 " .
+        "and v.disk_status = 'active'"
+    );  
+    return $value;
+}
+
+sub free_disk_space_info_genome_models {
+    my $name = join('.', 'disk', 'available', 'info_genome_models');
+    my $timestamp = DateTime->now->strftime("%s");
+    my $value = get_free_space_for_disk_group('info_genome_models');
+    return ($name, $value, $timestamp);
+}
+
+sub free_disk_space_info_alignments {
+    my $name = join('.', 'disk', 'available', 'info_alignments');
+    my $timestamp = DateTime->now->strftime("%s");
+    my $value = get_free_space_for_disk_group('info_alignments');
+    return ($name, $value, $timestamp);
+}
+
+sub get_total_space_for_disk_group {
+    my $group = shift;
+    my $value = parse_sqlrun_count(
+        "select cast((sum(greatest(total_kb - least((total_kb * .05), 1073741824), 0)) / 1073741824) as number(10,4)) total_space " .
+        "from gsc.disk_volume\@oltp v " .
+        "join gsc.disk_volume_group\@oltp dvg on dvg.dv_id = v.dv_id " .
+        "join gsc.disk_group\@oltp g on g.dg_id = dvg.dg_id " .
+        "where g.disk_group_name = '$group' " .
+        "and v.can_allocate = 1 " .
+        "and v.disk_status = 'active'"
+    );
+    return $value;
+}
+
+sub total_disk_space_info_genome_models {
+    my $name = join('.', 'disk', 'total', 'info_genome_models');
+    my $timestamp = DateTime->now->strftime("%s");
+    my $value = get_total_space_for_disk_group('info_genome_models');
+    return ($name, $value, $timestamp);
+}
+
+sub total_disk_space_info_alignments {
+    my $name = join('.', 'disk', 'total', 'info_alignments');
+    my $timestamp = DateTime->now->strftime("%s");
+    my $value = get_total_space_for_disk_group('info_alignments');
     return ($name, $value, $timestamp);
 }
