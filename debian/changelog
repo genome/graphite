@@ -1,3 +1,9 @@
+apipe-metrics-daemon (1.0.5) unstable; urgency=low
+
+  * added logging of total and available disk space for disk groups 
+
+ -- Brian Derickson <bdericks@genome.wustl.edu>  Fri, 22 Jul 2011 19:00:00 +0000
+
 apipe-metrics-daemon (1.0.4) unstable; urgency=low
 
   * move log_dir creation into pre-start rather than deb postinst

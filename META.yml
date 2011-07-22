@@ -15,7 +15,7 @@ name: Genome-Model-Tools-ApipeMetricsDaemon
 provides:
   Genome::Model::Tools::ApipeMetricsDaemon:
     file: lib/Genome/Model/Tools/ApipeMetricsDaemon.pm
-    version: 1.0.4
+    version: 1.0.5
 requires:
   Genome: 0.06
   Statistics::Distributions: ''
