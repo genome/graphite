@@ -151,16 +151,19 @@ sub start_daemon {
 sub graphite_send {
     my $self = shift;
     my $metric = shift;
-    my ($name, $value, $timestamp) = $self->$metric;
-    my $log_name = $name . ' 'x(50 - length($name));
-    my $log_value = $value . ' 'x(15 - length($value));
-    $self->_logger->info(join("\t", $log_name, $log_value, $timestamp));
-    if ($self->_graphite) {
-        return $self->_graphite->send($name, $value, $timestamp);
+    my @metric_data = $self->$metric;
+    my $g = $self->_graphite;
+    return 1 unless $g; # die here? -sms
+    while (@metric_data) {
+        my $name = shift @metric_data;
+        my $value = shift @metric_data;
+        my $timestamp = shift @metric_data;
+        my $log_name = $name . ' 'x(50 - length($name));
+        my $log_value = $value . ' 'x(15 - length($value));
+        $self->_logger->info(join("\t", $log_name, $log_value, $timestamp));
+        $g->send($name, $value, $timestamp); # how do we check for success asynchronously?
     }
-    else {
-        return 1;
-    }
+    return 1;
 }
 
 
@@ -183,6 +186,11 @@ sub cleanup {
 
 sub parse_sqlrun_count {
     my $sql = shift;
+    my $results = $self->_dbh()->selectcol_arrayref($sql);
+    die $self->_dbh()->errstr if not $results;
+    return $results->[0];
+
+    # OLD
     my $instance = 'warehouse';
     if(@_) {
         $instance = shift;
