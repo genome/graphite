@@ -318,6 +318,7 @@ sub builds_hourly_unstartable {
 sub every_minute {
     my $self = shift;
     $self->_logger->info('every_minute');
+    $self->log_metric('builds_current_new');
     $self->log_metric('builds_current_failed');
     $self->log_metric('builds_current_running');
     $self->log_metric('builds_current_scheduled');
@@ -348,6 +349,10 @@ sub builds_current_status {
     my $timestamp = DateTime->now->strftime("%s");
     my $value = $self->parse_sqlrun_count("select count(distinct(gm.genome_model_id)) from mg.genome_model gm where exists (select * from mg.genome_model_build gmb where gmb.model_id = gm.genome_model_id and exists (select * from mg.genome_model_event gme where gme.event_type = 'genome model build' and gme.build_id = gmb.build_id and gme.event_status = '$status' and gme.user_name = 'apipe-builder'))");
     return ($name, $value, $timestamp);
+}
+sub builds_current_new {
+    my $self = shift;
+    return $self->builds_current_status('New');
 }
 sub builds_current_failed {
     my $self = shift;
