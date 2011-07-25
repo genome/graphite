@@ -28,7 +28,7 @@ class Genome::Model::Tools::ApipeMetricsDaemon {
         },
         graphite_host => {
             is => 'Text',
-            doc => 'graphite host',
+            doc => 'graphite host, specify 0.0.0.0 to disable',
             default => '10.0.28.195',
         },
         graphite_port => {
@@ -38,9 +38,10 @@ class Genome::Model::Tools::ApipeMetricsDaemon {
         },
     ],
     has_optional => [
-        _dbh => {
-            is => 'Text',
-            doc => 'database handle'
+        _data_sources => {
+            is => 'Genome::DataSource',
+            doc => 'database handles',
+            is_many => 1,
         },
         _graphite => {
             is => 'Text',
@@ -87,11 +88,6 @@ sub init {
         die "Failed to get Graphite connection.\n" unless $self->_graphite->isa('AnyEvent::Graphite');
     }
 
-    $self->db_connect();
-    unless ($self->_dbh) {
-        $self->cleanup();
-        die "Failed to get DB connection.\n";
-    }
     return 1;
 }
 
@@ -118,7 +114,14 @@ sub init_logger {
 sub start_daemon {
     my $self = shift;
     $self->_logger->info('Starting daemon...');
-    $self->_logger->info('Metrics will be sent to ' . $self->graphite_host . ':' . $self->graphite_port . '...');
+
+    if ($self->graphite_host ne '0.0.0.0') {
+        $self->_logger->info('Metrics will be sent to ' . $self->graphite_host . ':' . $self->graphite_port . '.');
+    }
+    else {
+        $self->_logger->info('Metrics will not be sent to Graphite.');
+    }
+
     my $now      = DateTime->now(time_zone => 'America/Chicago');
     my $hours    = DateTime::Duration->new(hours   => $now->hour);
     my $minutes  = DateTime::Duration->new(minutes => $now->minute);
@@ -148,12 +151,15 @@ sub start_daemon {
 }
 
 
-sub graphite_send {
+sub log_metric {
     my $self = shift;
     my $metric = shift;
     my @metric_data = $self->$metric;
-    my $g = $self->_graphite;
-    return 1 unless $g; # die here? -sms
+
+    # Sending to Graphite can be disabled by specifying 0.0.0.0 as the Graphite host.
+    # So we don't want to die if it doesn't exist but we do need to assume it may not exist.
+    my $graphite = $self->_graphite;
+
     while (@metric_data) {
         my $name = shift @metric_data;
         my $value = shift @metric_data;
@@ -161,47 +167,54 @@ sub graphite_send {
         my $log_name = $name . ' 'x(50 - length($name));
         my $log_value = $value . ' 'x(15 - length($value));
         $self->_logger->info(join("\t", $log_name, $log_value, $timestamp));
-        $g->send($name, $value, $timestamp); # how do we check for success asynchronously?
+        if ($graphite) {
+            $graphite->send($name, $value, $timestamp); # how do we check for success asynchronously?
+        }
     }
-    return 1;
-}
-
-
-sub db_connect {
-    my $self = shift;
-    my $dbh = Genome::DataSource::GMSchema->get_default_handle();
-    $self->_dbh($dbh);
-    die "Failed to connect to the database!\n" unless $self->_dbh;
     return 1;
 }
 
 
 sub cleanup {
     my $self = shift;
-    $self->_dbh->rollback if ($self->_dbh);
-    $self->_dbh->disconnect if ($self->_dbh);
+    my @data_sources = $self->_data_sources;
+    for my $data_source (@data_sources) {
+        $data_source->disconnect_default_handle if $data_source->has_default_handle;
+    }
     $self->_graphite->finish if ($self->_graphite);
 }
 
 
-sub parse_sqlrun_count {
-    my $sql = shift;
-    my $results = $self->_dbh()->selectcol_arrayref($sql);
-    die $self->_dbh()->errstr if not $results;
-    return $results->[0];
+sub get_data_source {
+    my $self = shift;
+    my $data_source_class = shift;
 
-    # OLD
-    my $instance = 'warehouse';
-    if(@_) {
-        $instance = shift;
+    my ($data_source) = grep { $_->isa($data_source_class) } $self->_data_sources;
+    unless ($data_source) {
+        $self->_logger->info("Connecting to $data_source_class...");
+        $data_source = $data_source_class->get();
+        $self->add__data_source($data_source);
     }
-    my $instance_str = '';
-    if ($instance) {
-        $instance_str = "--instance=$instance";
-    }
-    my $output = qx{sqlrun $instance_str "$sql" | head -n 3 | tail -n 1};
-    my ($value) = $output =~ /^([\d\.]+)/;
-    return $value;
+    die "Unable to get database handle to $data_source_class.\n" unless $data_source;
+
+    return $data_source;
+}
+
+
+sub parse_sqlrun_count {
+    my $self = shift;
+    my $sql = shift;
+
+    # defaulte to GMSchema but allow override
+    my $data_source_class = 'Genome::DataSource::GMSchema';
+    $data_source_class = shift if (@_);
+
+    my $data_source = $self->get_data_source($data_source_class);
+    my $dbh = $data_source->get_default_handle;
+    my $results = $dbh->selectcol_arrayref($sql);
+    die $dbh->errstr if not $results;
+
+    return $results->[0];
 }
 
 ###################
@@ -211,13 +224,14 @@ sub parse_sqlrun_count {
 sub every_day {
     my $self = shift;
     $self->_logger->info('every_day');
-    $self->graphite_send('builds_daily_failed');
-    $self->graphite_send('builds_daily_succeeded');
-    $self->graphite_send('builds_daily_unstartable');
+    $self->log_metric('builds_daily_failed');
+    $self->log_metric('builds_daily_succeeded');
+    $self->log_metric('builds_daily_unstartable');
     return 1;
 }
 
 sub builds_prior_daily_status {
+    my $self = shift;
     my $status = shift;
 
     my $datetime = DateTime->now(time_zone => 'America/Chicago');
@@ -238,13 +252,16 @@ sub builds_prior_daily_status {
     return ($name, $value, $timestamp);
 }
 sub builds_daily_failed {
-    return builds_prior_daily_status('Failed');
+    my $self = shift;
+    return $self->builds_prior_daily_status('Failed');
 }
 sub builds_daily_succeeded {
-    return builds_prior_daily_status('Succeeded');
+    my $self = shift;
+    return $self->builds_prior_daily_status('Succeeded');
 }
 sub builds_daily_unstartable {
-    return builds_prior_daily_status('Unstartable');
+    my $self = shift;
+    return $self->builds_prior_daily_status('Unstartable');
 }
 
 ####################
@@ -254,13 +271,14 @@ sub builds_daily_unstartable {
 sub every_hour {
     my $self = shift;
     $self->_logger->info('every_hour');
-    $self->graphite_send('builds_hourly_failed');
-    $self->graphite_send('builds_hourly_succeeded');
-    $self->graphite_send('builds_hourly_unstartable');
+    $self->log_metric('builds_hourly_failed');
+    $self->log_metric('builds_hourly_succeeded');
+    $self->log_metric('builds_hourly_unstartable');
     return 1;
 }
 
 sub builds_prior_hour_status {
+    my $self = shift;
     my $status = shift;
 
     my $datetime = DateTime->now(time_zone => 'America/Chicago');
@@ -281,13 +299,16 @@ sub builds_prior_hour_status {
     return ($name, $value, $timestamp);
 }
 sub builds_hourly_failed {
-    return builds_prior_hour_status('Failed');
+    my $self = shift;
+    return $self->builds_prior_hour_status('Failed');
 }
 sub builds_hourly_succeeded {
-    return builds_prior_hour_status('Succeeded');
+    my $self = shift;
+    return $self->builds_prior_hour_status('Succeeded');
 }
 sub builds_hourly_unstartable {
-    return builds_prior_hour_status('Unstartable');
+    my $self = shift;
+    return $self->builds_prior_hour_status('Unstartable');
 }
 
 ######################
@@ -297,60 +318,68 @@ sub builds_hourly_unstartable {
 sub every_minute {
     my $self = shift;
     $self->_logger->info('every_minute');
-    $self->graphite_send('builds_current_failed');
-    $self->graphite_send('builds_current_running');
-    $self->graphite_send('builds_current_scheduled');
-    $self->graphite_send('builds_current_succeeded');
-    $self->graphite_send('builds_current_unstartable');
-    $self->graphite_send('lims_qidfgm_inprogress');
-    $self->graphite_send('lsf_workflow_run');
-    $self->graphite_send('lsf_workflow_pend');
-    $self->graphite_send('lsf_alignment_run');
-    $self->graphite_send('lsf_alignment_pend');
-    $self->graphite_send('lsf_blades_run');
-    $self->graphite_send('lsf_blades_pend');
-    $self->graphite_send('models_build_requested');
-    $self->graphite_send('models_build_requested_first_build');
-    $self->graphite_send('models_buildless');
-    $self->graphite_send('models_failed');
-    $self->graphite_send('free_disk_space_info_genome_models');
-    $self->graphite_send('free_disk_space_info_alignments');
-    $self->graphite_send('total_disk_space_info_genome_models');
-    $self->graphite_send('total_disk_space_info_alignments');
+    $self->log_metric('builds_current_failed');
+    $self->log_metric('builds_current_running');
+    $self->log_metric('builds_current_scheduled');
+    $self->log_metric('builds_current_succeeded');
+    $self->log_metric('builds_current_unstartable');
+    $self->log_metric('lims_qidfgm_inprogress');
+    $self->log_metric('lsf_workflow_run');
+    $self->log_metric('lsf_workflow_pend');
+    $self->log_metric('lsf_alignment_run');
+    $self->log_metric('lsf_alignment_pend');
+    $self->log_metric('lsf_blades_run');
+    $self->log_metric('lsf_blades_pend');
+    $self->log_metric('models_build_requested');
+    $self->log_metric('models_build_requested_first_build');
+    $self->log_metric('models_buildless');
+    $self->log_metric('models_failed');
+    $self->log_metric('free_disk_space_info_genome_models');
+    $self->log_metric('free_disk_space_info_alignments');
+    $self->log_metric('total_disk_space_info_genome_models');
+    $self->log_metric('total_disk_space_info_alignments');
     return 1;
 }
 
 sub builds_current_status {
+    my $self = shift;
     my $status = shift;
     my $name = join('.', 'builds', 'current_' . lc($status));
     my $timestamp = DateTime->now->strftime("%s");
-    my $value = parse_sqlrun_count("select count(distinct(gm.genome_model_id)) from mg.genome_model gm where exists (select * from mg.genome_model_build gmb where gmb.model_id = gm.genome_model_id and exists (select * from mg.genome_model_event gme where gme.event_type = 'genome model build' and gme.build_id = gmb.build_id and gme.event_status = '$status' and gme.user_name = 'apipe-builder'))");
+    my $value = $self->parse_sqlrun_count("select count(distinct(gm.genome_model_id)) from mg.genome_model gm where exists (select * from mg.genome_model_build gmb where gmb.model_id = gm.genome_model_id and exists (select * from mg.genome_model_event gme where gme.event_type = 'genome model build' and gme.build_id = gmb.build_id and gme.event_status = '$status' and gme.user_name = 'apipe-builder'))");
     return ($name, $value, $timestamp);
 }
 sub builds_current_failed {
-    return builds_current_status('Failed');
+    my $self = shift;
+    return $self->builds_current_status('Failed');
 }
 sub builds_current_running {
-    return builds_current_status('Running');
+    my $self = shift;
+    return $self->builds_current_status('Running');
 }
 sub builds_current_scheduled {
-    return builds_current_status('Scheduled');
+    my $self = shift;
+    return $self->builds_current_status('Scheduled');
 }
 sub builds_current_succeeded {
-    return builds_current_status('Succeeded');
+    my $self = shift;
+    return $self->builds_current_status('Succeeded');
 }
 sub builds_current_unstartable {
-    return builds_current_status('Unstartable');
+    my $self = shift;
+    return $self->builds_current_status('Unstartable');
 }
 
 sub lims_qidfgm_inprogress {
+    my $self = shift;
     my $name = join('.', 'lims', 'qidfgm_inprogress');
     my $timestamp = DateTime->now->strftime("%s");
-    my $value = parse_sqlrun_count( q{SELECT COUNT(*) FROM gsc.process_step_executions WHERE ps_ps_id = 3733 AND psesta_pse_status = 'inprogress'}, undef );
+    my $value = $self->parse_sqlrun_count( q{SELECT COUNT(*) FROM gsc.process_step_executions WHERE ps_ps_id = 3733 AND psesta_pse_status = 'inprogress'}, 'Genome::DataSource::Oltp' );
     return ($name, $value, $timestamp);
 }
 
 sub lsf_queue_status {
+    my $self = shift;
     my ($queue, $status) = @_;
     my $name = join('.', 'lsf', $queue, lc($status));
     my $timestamp = DateTime->now->strftime("%s");
@@ -359,61 +388,73 @@ sub lsf_queue_status {
     return ($name, $value, $timestamp);
 }
 sub lsf_workflow_run {
-    return lsf_queue_status('workflow', 'RUN');
+    my $self = shift;
+    return $self->lsf_queue_status('workflow', 'RUN');
 }
 sub lsf_workflow_pend {
-    return lsf_queue_status('workflow', 'PEND');
+    my $self = shift;
+    return $self->lsf_queue_status('workflow', 'PEND');
 }
 sub lsf_alignment_run {
-    return lsf_queue_status('alignment-pd', 'RUN');
+    my $self = shift;
+    return $self->lsf_queue_status('alignment-pd', 'RUN');
 }
 sub lsf_alignment_pend {
-    return lsf_queue_status('alignment-pd', 'PEND');
+    my $self = shift;
+    return $self->lsf_queue_status('alignment-pd', 'PEND');
 }
 sub lsf_blades_status {
+    my $self = shift;
     my $status = shift;
-    my ($long_name, $long_value, $long_timestamp) = lsf_queue_status('long', $status);
-    my ($apipe_name, $apipe_value, $apipe_timestamp) = lsf_queue_status('apipe', $status);
+    my ($long_name, $long_value, $long_timestamp) = $self->lsf_queue_status('long', $status);
+    my ($apipe_name, $apipe_value, $apipe_timestamp) = $self->lsf_queue_status('apipe', $status);
     (my $name = $long_name) =~ s/long/blades/g;
     my $timestamp = $long_timestamp;
     my $value = $long_value + $apipe_value;
     return ($name, $value, $timestamp);
 }
 sub lsf_blades_run {
-    return lsf_blades_status('RUN');
+    my $self = shift;
+    return $self->lsf_blades_status('RUN');
 }
 sub lsf_blades_pend {
-    return lsf_blades_status('PEND');
+    my $self = shift;
+    return $self->lsf_blades_status('PEND');
 }
 
 sub models_build_requested {
+    my $self = shift;
     my $name = join('.', 'models', 'build_requested');
     my $timestamp = DateTime->now->strftime("%s");
-    my $value = parse_sqlrun_count("select count(*) from mg.genome_model gm where gm.build_requested = 1");
+    my $value = $self->parse_sqlrun_count("select count(*) from mg.genome_model gm where gm.build_requested = 1");
     return ($name, $value, $timestamp);
 }
 sub models_build_requested_first_build {
+    my $self = shift;
     my $name = join('.', 'models', 'build_requested_first_build');
     my $timestamp = DateTime->now->strftime("%s");
-    my $value = parse_sqlrun_count("select count(*) from mg.genome_model gm where gm.build_requested = 1 and not exists (select * from mg.genome_model_build gmb where gmb.model_id = gm.genome_model_id)");
+    my $value = $self->parse_sqlrun_count("select count(*) from mg.genome_model gm where gm.build_requested = 1 and not exists (select * from mg.genome_model_build gmb where gmb.model_id = gm.genome_model_id)");
     return ($name, $value, $timestamp);
 }
 sub models_buildless {
+    my $self = shift;
     my $name = join('.', 'models', 'buildless');
     my $timestamp = DateTime->now->strftime("%s");
-    my $value = parse_sqlrun_count("select count(*) from mg.genome_model gm where gm.build_requested != 1 and gm.user_name = 'apipe-builder' and not exists (select * from mg.genome_model_build gmb where gmb.model_id = gm.genome_model_id)");
+    my $value = $self->parse_sqlrun_count("select count(*) from mg.genome_model gm where gm.build_requested != 1 and gm.user_name = 'apipe-builder' and not exists (select * from mg.genome_model_build gmb where gmb.model_id = gm.genome_model_id)");
     return ($name, $value, $timestamp);
 }
 sub models_failed {
+    my $self = shift;
     my $name = join('.', 'models', 'failed');
     my $timestamp = DateTime->now->strftime("%s");
-    my $value = parse_sqlrun_count("select count(distinct(gm.genome_model_id)) from mg.genome_model gm where exists (select * from mg.genome_model_build gmb where gmb.model_id = gm.genome_model_id and exists (select * from mg.genome_model_event gme where gme.event_type = 'genome model build' and gme.build_id = gmb.build_id and gme.event_status = 'Failed' and gme.user_name = 'apipe-builder'))");
+    my $value = $self->parse_sqlrun_count("select count(distinct(gm.genome_model_id)) from mg.genome_model gm where exists (select * from mg.genome_model_build gmb where gmb.model_id = gm.genome_model_id and exists (select * from mg.genome_model_event gme where gme.event_type = 'genome model build' and gme.build_id = gmb.build_id and gme.event_status = 'Failed' and gme.user_name = 'apipe-builder'))");
     return ($name, $value, $timestamp);
 }
 
 sub get_free_space_for_disk_group {
+    my $self = shift;
     my $group = shift;
-    my $value = parse_sqlrun_count(
+    my $value = $self->parse_sqlrun_count(
         "select cast((sum(greatest(v.unallocated_kb - ceil(least((total_kb * .05), 1073741824)), 0)) / 1073741824) as number(10,4)) free_space " .
         "from gsc.disk_volume\@oltp v " .
         "join gsc.disk_volume_group\@oltp dvg on dvg.dv_id = v.dv_id " .
@@ -426,22 +467,25 @@ sub get_free_space_for_disk_group {
 }
 
 sub free_disk_space_info_genome_models {
+    my $self = shift;
     my $name = join('.', 'disk', 'available', 'info_genome_models');
     my $timestamp = DateTime->now->strftime("%s");
-    my $value = get_free_space_for_disk_group('info_genome_models');
+    my $value = $self->get_free_space_for_disk_group('info_genome_models');
     return ($name, $value, $timestamp);
 }
 
 sub free_disk_space_info_alignments {
+    my $self = shift;
     my $name = join('.', 'disk', 'available', 'info_alignments');
     my $timestamp = DateTime->now->strftime("%s");
-    my $value = get_free_space_for_disk_group('info_alignments');
+    my $value = $self->get_free_space_for_disk_group('info_alignments');
     return ($name, $value, $timestamp);
 }
 
 sub get_total_space_for_disk_group {
+    my $self = shift;
     my $group = shift;
-    my $value = parse_sqlrun_count(
+    my $value = $self->parse_sqlrun_count(
         "select cast((sum(greatest(total_kb - least((total_kb * .05), 1073741824), 0)) / 1073741824) as number(10,4)) total_space " .
         "from gsc.disk_volume\@oltp v " .
         "join gsc.disk_volume_group\@oltp dvg on dvg.dv_id = v.dv_id " .
@@ -454,15 +498,17 @@ sub get_total_space_for_disk_group {
 }
 
 sub total_disk_space_info_genome_models {
+    my $self = shift;
     my $name = join('.', 'disk', 'total', 'info_genome_models');
     my $timestamp = DateTime->now->strftime("%s");
-    my $value = get_total_space_for_disk_group('info_genome_models');
+    my $value = $self->get_total_space_for_disk_group('info_genome_models');
     return ($name, $value, $timestamp);
 }
 
 sub total_disk_space_info_alignments {
+    my $self = shift;
     my $name = join('.', 'disk', 'total', 'info_alignments');
     my $timestamp = DateTime->now->strftime("%s");
-    my $value = get_total_space_for_disk_group('info_alignments');
+    my $value = $self->get_total_space_for_disk_group('info_alignments');
     return ($name, $value, $timestamp);
 }
