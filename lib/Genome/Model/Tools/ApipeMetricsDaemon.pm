@@ -339,6 +339,7 @@ sub every_minute {
     $self->log_metric('free_disk_space_info_alignments');
     $self->log_metric('total_disk_space_info_genome_models');
     $self->log_metric('total_disk_space_info_alignments');
+    $self->log_metric('allocations_needing_reallocating');
     return 1;
 }
 
@@ -515,5 +516,18 @@ sub total_disk_space_info_alignments {
     my $name = join('.', 'disk', 'total', 'info_alignments');
     my $timestamp = DateTime->now->strftime("%s");
     my $value = $self->get_total_space_for_disk_group('info_alignments');
+    return ($name, $value, $timestamp);
+}
+
+sub allocations_needing_reallocating {
+    my $self = shift;
+    my $name = join('.', 'disk', 'allocation', 'not_reallocated');
+    my $timestamp = DateTime->now->strftime("%s");
+    my $value = $self->parse_sqlrun_count(
+        "select count(*) " .
+        "from mg.genome_disk_allocation a " .
+        "where a.creation_time < SYSDATE - 7 " .
+        "and a.reallocation_time is null"
+    );
     return ($name, $value, $timestamp);
 }
