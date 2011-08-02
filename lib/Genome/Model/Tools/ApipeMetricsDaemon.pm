@@ -153,8 +153,7 @@ sub start_daemon {
 
 sub log_metric {
     my $self = shift;
-    my $metric = shift;
-    my @metric_data = $self->$metric;
+    my @metric_data = @_;
 
     # Sending to Graphite can be disabled by specifying 0.0.0.0 as the Graphite host.
     # So we don't want to die if it doesn't exist but we do need to assume it may not exist.
@@ -224,9 +223,9 @@ sub parse_sqlrun_count {
 sub every_day {
     my $self = shift;
     $self->_logger->info('every_day');
-    $self->log_metric('builds_daily_failed');
-    $self->log_metric('builds_daily_succeeded');
-    $self->log_metric('builds_daily_unstartable');
+    $self->log_metric($self->builds_daily_failed);
+    $self->log_metric($self->builds_daily_succeeded);
+    $self->log_metric($self->builds_daily_unstartable);
     return 1;
 }
 
@@ -271,9 +270,9 @@ sub builds_daily_unstartable {
 sub every_hour {
     my $self = shift;
     $self->_logger->info('every_hour');
-    $self->log_metric('builds_hourly_failed');
-    $self->log_metric('builds_hourly_succeeded');
-    $self->log_metric('builds_hourly_unstartable');
+    $self->log_metric($self->builds_hourly_failed);
+    $self->log_metric($self->builds_hourly_succeeded);
+    $self->log_metric($self->builds_hourly_unstartable);
     return 1;
 }
 
@@ -318,62 +317,118 @@ sub builds_hourly_unstartable {
 sub every_minute {
     my $self = shift;
     $self->_logger->info('every_minute');
-    $self->log_metric('builds_current_new');
-    $self->log_metric('builds_current_failed');
-    $self->log_metric('builds_current_running');
-    $self->log_metric('builds_current_scheduled');
-    $self->log_metric('builds_current_succeeded');
-    $self->log_metric('builds_current_unstartable');
-    $self->log_metric('lims_qidfgm_inprogress');
-    $self->log_metric('lsf_workflow_run');
-    $self->log_metric('lsf_workflow_pend');
-    $self->log_metric('lsf_alignment_run');
-    $self->log_metric('lsf_alignment_pend');
-    $self->log_metric('lsf_blades_run');
-    $self->log_metric('lsf_blades_pend');
-    $self->log_metric('models_build_requested');
-    $self->log_metric('models_build_requested_first_build');
-    $self->log_metric('models_buildless');
-    $self->log_metric('models_failed');
-    $self->log_metric('free_disk_space_info_genome_models');
-    $self->log_metric('free_disk_space_info_alignments');
-    $self->log_metric('total_disk_space_info_genome_models');
-    $self->log_metric('total_disk_space_info_alignments');
-    $self->log_metric('allocations_needing_reallocating');
+    
+    # Build metrics
+    $self->build_status_by_user(
+        status => ['New', 'Failed', 'Running', 'Scheduled', 'Succeeded', 'Unstartable'],
+        user => ['apipe-builder', 'all'],
+    );
+
+    $self->pipeline_metrics_by_processing_profile(
+        reference_alignment => {
+            2580856 => 'feb_2011_default',
+            2581081 => 'feb_2011_default_lane_qc',
+        },
+        de_novo_assembly => {
+            2495849 => 'velvet_solexa',
+            2498894 => 'velvet_solexa_bwa_qual_10_filter_35',
+            2509648 => 'velvet_illumina_bwa_kmer_range_31_35',
+            2569540 => 'dacc_imported_soap',
+            2599969 => 'velvet_illumina_bwa_v1_1_04_acefile_updated',
+            2539586 => 'soap_solexa_insert_180',
+        },
+        somatic_variation => {
+            2594193 => 'wgs_with_sv',
+            2596933 => 'wgs_snv_indel_only',
+            2595664 => 'exome_with_sv',
+            2624278 => 'exome_without_sv',
+        },
+    );
+
+    # LIMS metrics
+    $self->log_metric($self->lims_qidfgm_inprogress);
+
+    # LSF metrics
+    $self->log_metric($self->lsf_workflow_run);
+    $self->log_metric($self->lsf_workflow_pend);
+    $self->log_metric($self->lsf_alignment_run);
+    $self->log_metric($self->lsf_alignment_pend);
+    $self->log_metric($self->lsf_blades_run);
+    $self->log_metric($self->lsf_blades_pend);
+
+    # Model metrics
+    $self->log_metric($self->models_build_requested);
+    $self->log_metric($self->models_build_requested_first_build);
+    $self->log_metric($self->models_buildless);
+    $self->log_metric($self->models_failed);
+
+    # Disk metrics
+    $self->log_metric($self->free_disk_space_info_genome_models);
+    $self->log_metric($self->free_disk_space_info_alignments);
+    $self->log_metric($self->total_disk_space_info_genome_models);
+    $self->log_metric($self->total_disk_space_info_alignments);
+    $self->log_metric($self->allocations_needing_reallocating);
     return 1;
 }
 
-sub builds_current_status {
-    my $self = shift;
-    my $status = shift;
-    my $name = join('.', 'builds', 'current_' . lc($status));
-    my $timestamp = DateTime->now->strftime("%s");
-    my $value = $self->parse_sqlrun_count("select count(distinct(gm.genome_model_id)) from mg.genome_model gm where exists (select * from mg.genome_model_build gmb where gmb.model_id = gm.genome_model_id and exists (select * from mg.genome_model_event gme where gme.event_type = 'genome model build' and gme.build_id = gmb.build_id and gme.event_status = '$status' and gme.user_name = 'apipe-builder'))");
-    return ($name, $value, $timestamp);
+sub build_status_by_user {
+    my ($self, %params) = @_;
+    my @statuses = @{$params{status}};
+    my @users = @{$params{user}};
+
+    for my $user (@users) {
+        for my $status (@statuses) {
+            my $name = join('.', 'builds', 'status', $user, 'current_' . lc($status));
+            my $timestamp = DateTime->now->strftime("%s");
+
+            my $user_query = '';
+            unless ($user eq 'all') {
+                $user_query = " and e.user_name = '$user'";
+            }
+    
+            my $value = $self->parse_sqlrun_count(
+                "select count(e.build_id) builds " .
+                "from mg.genome_model_event e " .
+                "where e.event_type = 'genome model build' " .
+                "and e.event_status = '$status' $user_query"
+            );
+            $self->log_metric($name, $value, $timestamp);
+        }
+    }
+    return 1;
 }
-sub builds_current_new {
+
+sub pipeline_metrics_by_processing_profile {
     my $self = shift;
-    return $self->builds_current_status('New');
-}
-sub builds_current_failed {
-    my $self = shift;
-    return $self->builds_current_status('Failed');
-}
-sub builds_current_running {
-    my $self = shift;
-    return $self->builds_current_status('Running');
-}
-sub builds_current_scheduled {
-    my $self = shift;
-    return $self->builds_current_status('Scheduled');
-}
-sub builds_current_succeeded {
-    my $self = shift;
-    return $self->builds_current_status('Succeeded');
-}
-sub builds_current_unstartable {
-    my $self = shift;
-    return $self->builds_current_status('Unstartable');
+    my %params = @_;
+    for my $pipeline (sort keys %params) {
+        my $class_name = 'Genome::Model::' . join('', map { ucfirst $_ } split('_', $pipeline)); # How's THAT for a one-liner?
+
+        my %pp_info = %{$params{$pipeline}};
+        $pp_info{'all'} = 'all';
+
+        for my $pp_id (sort keys %pp_info) {
+            my $pp_name = $pp_info{$pp_id};
+            my $name = join('.', 'builds', 'running_pipelines', $pipeline, $pp_name);
+            my $timestamp = DateTime->now->strftime("%s");
+
+            my $pp_query = '';
+            unless ($pp_id eq 'all') {
+                $pp_query = " and m.processing_profile_id = $pp_id";
+            }
+
+            my $value = $self->parse_sqlrun_count(
+                "select count(e.build_id) builds " .
+                "from mg.genome_model m " .
+                "join mg.genome_model_event e on e.model_id = m.genome_model_id " .
+                "where e.event_status in ('Running', 'Scheduled', 'New') " .
+                "and e.event_type = 'genome model build' " .
+                "and m.subclass_name = '$class_name' $pp_query"
+            );
+            $self->log_metric($name, $value, $timestamp);
+        }
+    }
+    return 1;
 }
 
 sub lims_qidfgm_inprogress {
