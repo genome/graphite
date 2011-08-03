@@ -324,6 +324,11 @@ sub every_minute {
         user => ['apipe-builder', 'all'],
     );
 
+    $self->model_status_by_user(
+        status => ['Running', 'Scheduled', 'Failed', 'Unstartable'],
+        user => ['apipe-builder', 'all'],
+    );
+
     $self->pipeline_metrics_by_processing_profile(
         reference_alignment => {
             2580856 => 'feb_2011_default',
@@ -381,8 +386,11 @@ sub build_status_by_user {
             my $name = join('.', 'builds', 'status', $user, 'current_' . lc($status));
             my $timestamp = DateTime->now->strftime("%s");
 
-            my $user_query = '';
-            unless ($user eq 'all') {
+            my $user_query;
+            if ($user eq 'all') {
+                $user_query = " and e.user_name != 'apipe-tester'";
+            }
+            else {
                 $user_query = " and e.user_name = '$user'";
             }
     
@@ -391,6 +399,45 @@ sub build_status_by_user {
                 "from mg.genome_model_event e " .
                 "where e.event_type = 'genome model build' " .
                 "and e.event_status = '$status' $user_query"
+            );
+            $self->log_metric($name, $value, $timestamp);
+        }
+    }
+    return 1;
+}
+
+sub model_status_by_user {
+    my ($self, %params) = @_;
+    my @statuses = @{$params{status}};
+    my @users = @{$params{user}};
+
+    for my $user (@users) {
+        for my $status (@statuses) {
+            my $name = join('.', 'models', 'status', $user, 'current_' . lc($status));
+            my $timestamp = DateTime->now->strftime("%s");
+
+            my $user_query;
+            if ($user eq 'all') {
+                $user_query = " and e.user_name != 'apipe-tester'";
+            }
+            else {
+                $user_query = " and e.user_name = '$user'";
+            }
+
+            my $value = $self->parse_sqlrun_count(
+                "select count(distinct m.genome_model_id) model_ids " .
+                "from mg.genome_model m " .
+                "where exists (" .
+                    "select * from mg.genome_model_build b " .
+                    "where b.model_id = m.genome_model_id " .
+                    "and exists (" .
+                        "select * " .
+                        "from mg.genome_model_event e " .
+                        "where e.event_type = 'genome model build' " .
+                        "and e.build_id = b.build_id " .
+                        "and e.event_status = '$status' $user_query" .
+                    ")" .
+                ")"
             );
             $self->log_metric($name, $value, $timestamp);
         }
@@ -423,6 +470,7 @@ sub pipeline_metrics_by_processing_profile {
                 "join mg.genome_model_event e on e.model_id = m.genome_model_id " .
                 "where e.event_status in ('Running', 'Scheduled', 'New') " .
                 "and e.event_type = 'genome model build' " .
+                "and e.user_name != 'apipe-tester' " .
                 "and m.subclass_name = '$class_name' $pp_query"
             );
             $self->log_metric($name, $value, $timestamp);
