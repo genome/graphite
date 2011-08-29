@@ -1,3 +1,9 @@
+apipe-metrics-daemon (1.1.1) unstable; urgency=low
+
+  * added lsf_all_apipe_builder and lsf_all_non_apipe_builder
+
+ -- Nathan Nutter <nnutter@genome.wustl.edu>  Mon, 29 Aug 2011 11:30:00 -0500
+
 apipe-metrics-daemon (1.1.0) unstable; urgency=low
 
   * added model metrics that track status by user
