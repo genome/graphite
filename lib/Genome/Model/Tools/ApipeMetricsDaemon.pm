@@ -3,7 +3,6 @@ package Genome::Model::Tools::ApipeMetricsDaemon;
 use strict;
 use warnings;
 
-use lib '/gscuser/nnutter/lib/gsc_bin_perl_5.8.7/lib/perl5';
 use AnyEvent;
 use AnyEvent::Graphite;
 use DateTime;
