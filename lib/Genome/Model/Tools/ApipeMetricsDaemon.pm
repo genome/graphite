@@ -353,6 +353,8 @@ sub every_minute {
     $self->log_metric($self->lims_qidfgm_inprogress);
 
     # LSF metrics
+    $self->log_metric($self->lsf_all_apipe_builder);
+    $self->log_metric($self->lsf_all_non_apipe_builder);
     $self->log_metric($self->lsf_workflow_run);
     $self->log_metric($self->lsf_workflow_pend);
     $self->log_metric($self->lsf_alignment_run);
@@ -486,6 +488,22 @@ sub lims_qidfgm_inprogress {
     return ($name, $value, $timestamp);
 }
 
+sub lsf_all_apipe_builder {
+    my $self = shift;
+    my $name = 'lsf.all.apipe-builder';
+    my $timestamp = DateTime->now->strftime("%s");
+    my $bjobs_output = qx(bjobs -w -u all 2> /dev/null | awk '{print \$1, \$2, \$3}' | grep "^[0-9].*apipe-builder.*RUN" | wc -l);
+    my ($value) = $bjobs_output =~ /^(\d+)/;
+    return ($name, $value, $timestamp);
+}
+sub lsf_all_non_apipe_builder {
+    my $self = shift;
+    my $name = 'lsf.all.non-apipe-builder';
+    my $timestamp = DateTime->now->strftime("%s");
+    my $bjobs_output = qx(bjobs -w -u all 2> /dev/null | awk '{print \$1, \$2, \$3}' | grep -v apipe-builder | grep "^[0-9].*RUN" | wc -l);
+    my ($value) = $bjobs_output =~ /^(\d+)/;
+    return ($name, $value, $timestamp);
+}
 sub lsf_queue_status {
     my $self = shift;
     my ($queue, $status) = @_;
