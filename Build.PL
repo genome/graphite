@@ -65,7 +65,7 @@ EOS
 my $build = $class->new(
   module_name => 'Genome::Model::Tools::ApipeMetricsDaemon',
   license => 'lgpl',
-  dist_version => '1.1.1',
+  dist_version => '1.1.2',
   dist_abstract => 'collect and report metrics to graphite',
 );
 
