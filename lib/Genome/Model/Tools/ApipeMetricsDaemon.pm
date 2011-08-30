@@ -355,6 +355,7 @@ sub every_minute {
     # LSF metrics
     $self->log_metric($self->lsf_all_apipe_builder);
     $self->log_metric($self->lsf_all_non_apipe_builder);
+    $self->log_metric($self->lsf_all_non_apipe_builder_apipe_queues);
     $self->log_metric($self->lsf_workflow_run);
     $self->log_metric($self->lsf_workflow_pend);
     $self->log_metric($self->lsf_alignment_run);
@@ -394,7 +395,7 @@ sub build_status_by_user {
             else {
                 $user_query = " and e.user_name = '$user'";
             }
-    
+
             my $value = $self->parse_sqlrun_count(
                 "select count(e.build_id) builds " .
                 "from mg.genome_model_event e " .
@@ -501,6 +502,14 @@ sub lsf_all_non_apipe_builder {
     my $name = 'lsf.all.non-apipe-builder';
     my $timestamp = DateTime->now->strftime("%s");
     my $bjobs_output = qx(bjobs -w -u all 2> /dev/null | awk '{print \$1, \$2, \$3}' | grep -v apipe-builder | grep "^[0-9].*RUN" | wc -l);
+    my ($value) = $bjobs_output =~ /^(\d+)/;
+    return ($name, $value, $timestamp);
+}
+sub lsf_all_non_apipe_builder_apipe_queues {
+    my $self = shift;
+    my $name = 'lsf.all.non-apipe-builder-apipe-queues';
+    my $timestamp = DateTime->now->strftime("%s");
+    my $bjobs_output = qx(bjobs -w -u all 2> /dev/null | awk '{print \$1, \$2, \$3, \$4}' | grep -v apipe-builder | egrep "^[0-9].*RUN.*\(apipe|alignment\)" | wc -l);
     my ($value) = $bjobs_output =~ /^(\d+)/;
     return ($name, $value, $timestamp);
 }
