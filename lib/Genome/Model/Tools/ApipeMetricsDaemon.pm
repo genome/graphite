@@ -316,7 +316,7 @@ sub builds_hourly_unstartable {
 sub every_minute {
     my $self = shift;
     $self->_logger->info('every_minute');
-    
+
     # Build metrics
     $self->build_status_by_user(
         status => ['New', 'Failed', 'Running', 'Scheduled', 'Succeeded', 'Unstartable'],
@@ -375,7 +375,23 @@ sub every_minute {
     $self->log_metric($self->total_disk_space_info_genome_models);
     $self->log_metric($self->total_disk_space_info_alignments);
     $self->log_metric($self->allocations_needing_reallocating);
+
+    # apipe test metrics
+    $self->log_metric($self->perl_test_duration);
+
     return 1;
+}
+
+sub perl_test_duration {
+    my $self = shift;
+    my $name = join('.', 'apipe', 'test_metrics', 'perl_tests_duration');
+    my $timestamp = DateTime->now->strftime("%s");
+    my $url = 'https://apipe-ci.gsc.wustl.edu/job/1 Genome Perl Tests/lastCompletedBuild/api/xml?xpath=/freeStyleBuild/duration';
+    my $value = qx(wget -qO - --no-check-certificate "$url" | sed -e 's/<[^>]*>//g');
+    # value is originally in milliseconds, convert to minutes
+    $value = $value / 1000 / 60;
+    chomp($value);
+    return ($name, $value, $timestamp);
 }
 
 sub build_status_by_user {
@@ -597,7 +613,7 @@ sub get_free_space_for_disk_group {
         "where g.disk_group_name = '$group' " .
         "and v.can_allocate = 1 " .
         "and v.disk_status = 'active'"
-    );  
+    );
     return $value;
 }
 
