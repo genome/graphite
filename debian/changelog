@@ -1,3 +1,9 @@
+apipe-metrics-daemon (1.1.3) unstable; urgency=low
+
+  * add perl_tests_duration metric
+
+ -- Nathan Nutter <nnutter@genome.wustl.edu>  Tue, 30 Aug 2011 15:10:00 -0500
+
 apipe-metrics-daemon (1.1.2) unstable; urgency=low
 
   * added lsf_all_non_apipe_builder_apipe_queues
