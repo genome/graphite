@@ -517,7 +517,7 @@ sub lsf_all_non_apipe_builder {
     my $self = shift;
     my $name = 'lsf.all.non-apipe-builder';
     my $timestamp = DateTime->now->strftime("%s");
-    my $bjobs_output = qx(bjobs -w -u all 2> /dev/null | awk '{print \$1, \$2, \$3}' | grep -v apipe-builder | grep "^[0-9].*RUN" | wc -l);
+    my $bjobs_output = qx(bjobs -w -u all 2> /dev/null | awk '{print \$1, \$2, \$3, \$4}' | egrep -v "\(apipe-builder|workflow\)"| grep "^[0-9].*RUN" | wc -l);
     my ($value) = $bjobs_output =~ /^(\d+)/;
     return ($name, $value, $timestamp);
 }
