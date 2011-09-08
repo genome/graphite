@@ -8,7 +8,6 @@ use AnyEvent::Graphite;
 use DateTime;
 use Genome;
 use Log::Log4perl qw(:easy);
-use Logfile::Rotate;
 
 
 class Genome::Model::Tools::ApipeMetricsDaemon {
@@ -92,32 +91,11 @@ sub init {
 }
 
 
-sub rotate_log {
-    my $self = shift;
-
-    my $log_file = $self->log_file;
-    my $log = new Logfile::Rotate(
-        File => $log_file, 
-        Count => 5,
-    );
-
-    unless ($log->rotate) {
-        die "Failed to rotate log file ($log_file).\n";
-    }
-
-    return 1;
-}
-
-
 sub init_logger {
     my $self = shift;
-
     (my $category = __PACKAGE__) =~ s/\:\:/./g;
-    my $log_level = $self->log_level;
-
     my $log_file = $self->log_file;
-    $self->rotate_log if (-s $log_file > 104_857_600) ;
-
+    my $log_level = $self->log_level;
     my @conf = (
         "log4perl.category.$category = $log_level, Logfile",
         'log4perl.appender.Logfile = Log::Log4perl::Appender::File',
