@@ -7,6 +7,8 @@ description "apipe metrics daemon"
 start on runlevel [2345]
 stop on runlevel [!2345]
 
+respawn
+
 env RUN_AS_USER='apipe-builder'
 env LOG_DIR='/var/log/apipe-metrics-daemon'
 
