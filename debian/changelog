@@ -1,11 +1,3 @@
-apipe-metrics-daemon (1.1.5) unstable; urgency=low
-
-  * fix missing dep libanyevent-graphite-perl
-  * add log rotation if log gets to 100 MB
-  * respawn upstart service if it dies
-
- -- Nathan Nutter <nnutter@genome.wustl.edu>  Thu, 08 Sep 2011 15:10:00 -0600
-
 apipe-metrics-daemon (1.1.4) unstable; urgency=low
 
   * remove workflow jobs from lsf.all.non_apipe_builder
