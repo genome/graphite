@@ -6,6 +6,6 @@ Build-Depends: debhelper (>= 7.4), perl (>= 5.10), libmodule-build-perl
 
 Package: apipe-metrics-daemon
 Architecture: all
-Depends: sudo, libanyevent-graphite-perl
+Depends: sudo, liblogfile-rotate-perl, libanyevent-graphite-perl
 Description: APipe Metrics Daemon
  Collects metrics and reporting to Graphite at apipe-metrics.gsc.wustl.edu.
