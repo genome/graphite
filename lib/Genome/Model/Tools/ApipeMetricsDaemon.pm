@@ -355,6 +355,7 @@ sub every_minute {
             2580856 => 'feb_2011_default',
             2581081 => 'feb_2011_default_lane_qc',
             2635769 => 'nov_2011_default',
+            2653572 => 'nov_2011_default_lane_qc',
         },
         de_novo_assembly => {
             2495849 => 'velvet_solexa',
