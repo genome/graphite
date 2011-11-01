@@ -354,6 +354,7 @@ sub every_minute {
         reference_alignment => {
             2580856 => 'feb_2011_default',
             2581081 => 'feb_2011_default_lane_qc',
+            2635769 => 'nov_2011_default',
         },
         de_novo_assembly => {
             2495849 => 'velvet_solexa',
@@ -368,6 +369,8 @@ sub every_minute {
             2596933 => 'wgs_snv_indel_only',
             2595664 => 'exome_with_sv',
             2624278 => 'exome_without_sv',
+            2642137 => 'nov_2011_wgs',
+            2642139 => 'nov_2011_exome',
         },
     );
 
