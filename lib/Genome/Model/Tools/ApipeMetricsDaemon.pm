@@ -116,7 +116,7 @@ sub init_logger {
     my $log_level = $self->log_level;
 
     my $log_file = $self->log_file;
-    $self->rotate_log if (-s $log_file > 104_857_600) ;
+    $self->rotate_log if (-e $log_file && -s $log_file > 104_857_600) ;
 
     my @conf = (
         "log4perl.category.$category = $log_level, Logfile",
