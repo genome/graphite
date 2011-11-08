@@ -405,6 +405,9 @@ sub every_minute {
     # apipe test metrics
     $self->log_metric($self->perl_test_duration);
 
+    # search metrics
+    $self->log_metric($self->index_queue_count);
+
     return 1;
 }
 
@@ -700,5 +703,13 @@ sub allocations_needing_reallocating {
         "where a.creation_time < SYSDATE - 7 " .
         "and a.reallocation_time is null"
     );
+    return ($name, $value, $timestamp);
+}
+
+sub index_queue_count {
+    my $self = shift;
+    my $name = join('.', 'search', 'index_queue_count');
+    my $timestamp = DateTime->now->strftime("%s");
+    my $value = $self->parse_sqlrun_count("select count(*) from web.search_index_queue", 'Genome::DataSource::Main');
     return ($name, $value, $timestamp);
 }
