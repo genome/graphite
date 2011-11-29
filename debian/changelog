@@ -1,3 +1,9 @@
+apipe-metrics-daemon (1.1.8) unstable; urgency=low
+
+  * update index_queue_count to point to oracle
+
+ -- Nathan Nutter <nnutter@genome.wustl.edu>  Tue, 29 Nov 2011 17:20:00 -0600
+
 apipe-metrics-daemon (1.1.7) unstable; urgency=low
 
   * added metric, index_queue_count, to monitor items in
