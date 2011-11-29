@@ -710,6 +710,6 @@ sub index_queue_count {
     my $self = shift;
     my $name = join('.', 'search', 'index_queue_count');
     my $timestamp = DateTime->now->strftime("%s");
-    my $value = $self->parse_sqlrun_count("select count(*) from web.search_index_queue", 'Genome::DataSource::Main');
+    my $value = $self->parse_sqlrun_count("select count(*) from MG.SEARCH_INDEX_QUEUE", 'Genome::DataSource::GMSchema');
     return ($name, $value, $timestamp);
 }
