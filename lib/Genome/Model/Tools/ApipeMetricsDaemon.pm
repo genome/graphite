@@ -406,7 +406,9 @@ sub every_minute {
     $self->log_metric($self->perl_test_duration);
 
     # search metrics
-    $self->log_metric($self->index_queue_count);
+    $self->log_metric($self->index_queue_count('where priority = 0', 'high_priority'));
+    $self->log_metric($self->index_queue_count('where priority = 1', 'normal_priority'));
+    $self->log_metric($self->index_queue_count('where priority not in (0, 1)', 'low_priority'));
 
     return 1;
 }
@@ -707,9 +709,15 @@ sub allocations_needing_reallocating {
 }
 
 sub index_queue_count {
-    my $self = shift;
+    my ($self, $sql_suffix, $name_suffix) = @_;
     my $name = join('.', 'search', 'index_queue_count');
     my $timestamp = DateTime->now->strftime("%s");
-    my $value = $self->parse_sqlrun_count("select count(*) from MG.SEARCH_INDEX_QUEUE", 'Genome::DataSource::GMSchema');
+    my $sql = 'select count(*) from MG.SEARCH_INDEX_QUEUE';
+    if ($sql_suffix && $name_suffix) {
+        $name .= ".$name_suffix";
+        $sql .= " $sql_suffix";
+    }
+    print STDERR "$sql\n";
+    my $value = $self->parse_sqlrun_count($sql, 'Genome::DataSource::GMSchema');
     return ($name, $value, $timestamp);
 }
