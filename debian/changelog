@@ -27,7 +27,7 @@ apipe-metrics-daemon (1.1.6) unstable; urgency=low
 
   * added metrics for November processing profiles
 
- -- Jim Weible <jweible@genome.wustl.edu>  The, 01 Nov 2011 15:10:00 -0600
+ -- Jim Weible <jweible@genome.wustl.edu>  Tue, 01 Nov 2011 15:10:00 -0600
 
 apipe-metrics-daemon (1.1.5) unstable; urgency=low
 
