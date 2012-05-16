@@ -167,7 +167,6 @@ sub start_daemon {
     my $done = AnyEvent->condvar;
     my $every_day    = AnyEvent->timer(after => $day_delay,  interval => 86400, cb => sub { $self->every_day });
     my $every_hour   = AnyEvent->timer(after => $hour_delay, interval => 3600,  cb => sub { $self->every_hour });
-    my $every_quarter_hour = AnyEvent->timer(after => $hour_delay, interval => 900,  cb => sub { $self->every_quarter_hour });
     my $every_minute = AnyEvent->timer(after => $min_delay,  interval => 60,    cb => sub { $self->every_minute });
     $done->recv;
 }
@@ -331,46 +330,6 @@ sub builds_hourly_unstartable {
     return $self->builds_prior_hour_status('Unstartable');
 }
 
-############################
-#### Every Quarter Hour ####
-############################
-
-sub every_quarter_hour {
-    my $self = shift;
-    $self->_logger->info('every_quarter_hour');
-
-    # LIMS - APIPE Bridge | There may be more metrics added here
-    $self->lims_apipe_bridge;
-
-    return 1;
-}
-
-sub lims_apipe_bridge {
-    my $self = shift;
-
-    my $timestamp = DateTime->now->strftime("%s");
-
-    # Inprogress QIDFGM
-    my $value = $self->parse_sqlrun_count(
-        q{SELECT COUNT(*) FROM gsc.process_step_executions WHERE ps_ps_id = 3733 AND psesta_pse_status = 'inprogress'}, 'Genome::DataSource::Oltp'
-    );
-    $self->log_metric('lims_apipe_bridge.qidfgm_inprogress', $value, $timestamp);
-
-    # NEW instrument data
-    $value = $self->parse_sqlrun_count(
-        q{SELECT COUNT(*) FROM instrument_data_attribute a WHERE attribute_label = 'tgi_lims_status' and attribute_value = 'new'}
-    );
-    $self->log_metric('lims_apipe_bridge.new_inst_data', $value, $timestamp);
-
-    # FAILED instrument data
-    $value = $self->parse_sqlrun_count(
-        q{SELECT COUNT(*) FROM instrument_data_attribute a WHERE attribute_label = 'tgi_lims_status' and attribute_value = 'failed'}
-    );
-    $self->log_metric('lims_apipe_bridge.failed_inst_data', $value, $timestamp);
-
-    return 1;
-}
-
 ######################
 #### Every Minute ####
 ######################
@@ -415,6 +374,10 @@ sub every_minute {
         },
     );
 
+    # LIMS - APIPE Bridge | There may be more metrics added here
+    $self->_logger->info('lims apipe bridge');
+    $self->lims_apipe_bridge;
+
     # LSF metrics
     $self->log_metric($self->lsf_all_apipe_builder);
     $self->log_metric($self->lsf_all_non_apipe_builder);
@@ -446,6 +409,35 @@ sub every_minute {
     $self->log_metric($self->index_queue_count('where priority = 0', 'high_priority'));
     $self->log_metric($self->index_queue_count('where priority = 1', 'normal_priority'));
     $self->log_metric($self->index_queue_count('where priority not in (0, 1)', 'low_priority'));
+
+    return 1;
+}
+
+sub lims_apipe_bridge {
+    my $self = shift;
+
+    my $timestamp = DateTime->now->strftime("%s");
+
+    # Inprogress QIDFGM
+    my $value = $self->parse_sqlrun_count(
+        q{SELECT COUNT(*) FROM gsc.process_step_executions WHERE ps_ps_id = 3733 AND psesta_pse_status = 'inprogress'}, 'Genome::DataSource::Oltp'
+    );
+    $self->log_metric('lims_apipe_bridge.qidfgm_inprogress', $value, $timestamp);
+
+    # NEW instrument data
+    my $new = $self->parse_sqlrun_count(
+        q{SELECT COUNT(*) FROM instrument_data_attribute a WHERE attribute_label = 'tgi_lims_status' and attribute_value = 'new'}
+    );
+    $self->log_metric('lims_apipe_bridge.inst_data_new', $new, $timestamp);
+
+    # FAILED instrument data
+    my $failed = $self->parse_sqlrun_count(
+        q{SELECT COUNT(*) FROM instrument_data_attribute a WHERE attribute_label = 'tgi_lims_status' and attribute_value = 'failed'}
+    );
+    $self->log_metric('lims_apipe_bridge.inst_data_failed', $failed, $timestamp);
+
+    # INPROGRESS (NEW + FAILED) instrument data
+    $self->log_metric('lims_apipe_bridge.inst_data_inprogress', ($new + $failed), $timestamp);
 
     return 1;
 }
