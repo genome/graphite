@@ -1,3 +1,9 @@
+apipe-metrics-daemon (1.1.11) unstable; urgency=low
+
+  * Metrics for the LIMS APipe bridge run every minute
+
+ -- Eddie Belter <ebelter@genome.wustl.edu>  Tue, 16 May 2012 16:20:00 -0600
+
 apipe-metrics-daemon (1.1.10) unstable; urgency=low
 
   * Added metrics for the LIMS APipe bridge
