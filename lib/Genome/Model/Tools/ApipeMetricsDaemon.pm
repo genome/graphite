@@ -374,8 +374,7 @@ sub every_minute {
         },
     );
 
-    # LIMS - APIPE Bridge | There may be more metrics added here
-    $self->_logger->info('lims apipe bridge');
+    # LIMS - APIPE Bridge
     $self->lims_apipe_bridge;
 
     # LSF metrics
@@ -422,22 +421,22 @@ sub lims_apipe_bridge {
     my $value = $self->parse_sqlrun_count(
         q{SELECT COUNT(*) FROM gsc.process_step_executions WHERE ps_ps_id = 3733 AND psesta_pse_status = 'inprogress'}, 'Genome::DataSource::Oltp'
     );
-    $self->log_metric('lims_apipe_bridge.qidfgm_inprogress', $value, $timestamp);
+    $self->log_metric('lims_apipe_bridge.qidfgm', $value, $timestamp);
 
     # NEW instrument data
     my $new = $self->parse_sqlrun_count(
         q{SELECT COUNT(*) FROM instrument_data_attribute a WHERE attribute_label = 'tgi_lims_status' and attribute_value = 'new'}
     );
-    $self->log_metric('lims_apipe_bridge.inst_data_new', $new, $timestamp);
+    $self->log_metric('lims_apipe_bridge.new', $new, $timestamp);
 
     # FAILED instrument data
     my $failed = $self->parse_sqlrun_count(
         q{SELECT COUNT(*) FROM instrument_data_attribute a WHERE attribute_label = 'tgi_lims_status' and attribute_value = 'failed'}
     );
-    $self->log_metric('lims_apipe_bridge.inst_data_failed', $failed, $timestamp);
+    $self->log_metric('lims_apipe_bridge.failed', $failed, $timestamp);
 
     # INPROGRESS (NEW + FAILED) instrument data
-    $self->log_metric('lims_apipe_bridge.inst_data_inprogress', ($new + $failed), $timestamp);
+    $self->log_metric('lims_apipe_bridge.inprogress', ($new + $failed), $timestamp);
 
     return 1;
 }
