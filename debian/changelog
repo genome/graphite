@@ -1,3 +1,9 @@
+apipe-metrics-daemon (1.1.13) lucid; urgency=low
+
+  * Updated Perl test duration metric to new URL.
+
+ -- Nathaniel Nutter <nnutter@genome.wustl.edu>  Tue, 04 Sep 2012 08:37:01 -0500
+
 apipe-metrics-daemon (1.1.12) unstable; urgency=low
 
   * Shorten metric names for the LIMS APipe bridge

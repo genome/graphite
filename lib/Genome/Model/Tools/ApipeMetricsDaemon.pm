@@ -445,7 +445,7 @@ sub perl_test_duration {
     my $self = shift;
     my $name = join('.', 'apipe', 'test_metrics', 'perl_tests_duration');
     my $timestamp = DateTime->now->strftime("%s");
-    my $url = 'https://apipe-ci.gsc.wustl.edu/job/1 Genome Perl Tests/lastCompletedBuild/api/xml?xpath=/freeStyleBuild/duration';
+    my $url = 'https://apipe-ci.gsc.wustl.edu/job/1-Genome-Perl-Tests/lastCompletedBuild/api/xml?xpath=matrixBuild/duration';
     my $value = qx(wget -qO - --no-check-certificate "$url" | sed -e 's/<[^>]*>//g');
     # value is originally in milliseconds, convert to minutes
     $value = $value / 1000 / 60;
