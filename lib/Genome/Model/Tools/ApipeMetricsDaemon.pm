@@ -740,7 +740,6 @@ sub index_queue_count {
         $name .= ".$name_suffix";
         $sql .= " $sql_suffix";
     }
-    print STDERR "$sql\n";
     my $value = $self->parse_sqlrun_count($sql, 'Genome::DataSource::GMSchema');
     return ($name, $value, $timestamp);
 }
