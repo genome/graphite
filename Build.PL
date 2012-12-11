@@ -23,44 +23,6 @@ my $class = Module::Build->subclass (
       }
 EOS
 );
-#      sub ACTION_cmd_docs {
-#        use File::Copy qw/copy/;
-#        $ENV{ANSI_COLORS_DISABLED} = 1;
-#        eval {
-#          local @INC = @INC;
-#          unshift @INC, 'blib/lib';
-#          die $@ if $@;
-#          eval "use Genome::Model::Tools::ApipeMetricsDaemon";
-#          die $@ if $@;
-#
-#          foreach my $exec ('genome','gmt') {
-#            UR::Namespace::Command::Update::Doc->execute(
-#                class_name => 'Genome::Model::Tools',
-#                targets => [ 'Genome::Model::Tools::ApipeMetricsDaemon' ],
-#                executable_name => $exec,
-#                output_path => 'cmd-bindoc',
-#                output_format => 'pod',
-#            );
-#          }
-#        };
-#        die "failed to extract pod: $!: $@" if ($@);
-#      }
-#
-#      sub ACTION_docs {
-#        my $self = shift;
-#        $self->depends_on('code');
-#        $self->depends_on('cmd_docs');
-#        $self->depends_on('manpages', 'html');
-#      }
-#       
-#      sub man1page_name {
-#        my ($self, $file) = @_;
-#        $file =~ s/.pod$//;
-#        return $self->SUPER::man1page_name($file);
-#      }
-#
-#EOS
-#);
 
 my $build = $class->new(
   module_name => 'Genome::Model::Tools::ApipeMetricsDaemon',
