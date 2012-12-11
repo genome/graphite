@@ -1,3 +1,9 @@
+apipe-metrics-daemon (1.1.14) lucid; urgency=low
+
+  * Added Oracle DB session metrics.
+
+ -- Nathaniel Nutter <nnutter@genome.wustl.edu>  Tue, 11 Dec 2012 12:08:54 -0600
+
 apipe-metrics-daemon (1.1.13) lucid; urgency=low
 
   * Updated Perl test duration metric to new URL.
