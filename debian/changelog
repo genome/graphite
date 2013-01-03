@@ -2,7 +2,7 @@ apipe-metrics-daemon (1.1.15) lucid; urgency=low
 
   * Added Postgres DB session metrics.
 
- -- Nathaniel Nutter <nnutter@genome.wustl.edu>  Thu, 03 Jan 2013 14:38:54 -0600
+ -- Ben Oberkfell <boberkfe@genome.wustl.edu>  Thu, 03 Jan 2013 14:38:54 -0600
 
 apipe-metrics-daemon (1.1.14) lucid; urgency=low
 
