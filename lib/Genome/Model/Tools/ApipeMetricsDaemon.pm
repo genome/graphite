@@ -412,6 +412,9 @@ sub every_minute {
     # Oracle DB Metrics
     $self->db_oracle_sessions;
 
+    # Postgres DB Metrics
+    $self->db_postgres_sessions;
+
     return 1;
 }
 
@@ -760,4 +763,12 @@ sub db_oracle_sessions {
         my $value = $self->parse_sqlrun_count(qq{select count(sid) from v\$session where osuser = '$osuser'});
         $self->log_metric($name, $value, $timestamp);
     }
+}
+
+sub db_postgres_sessions {
+    my $self = shift;
+    my $name = join('.','db','postgres','sessions');
+    my $timestamp = DateTime->now->strftime("%s");
+    my $value = $self->parse_sqlrun_count(q{select count(*) from pg_stat_activity}, 'Genome::DataSource::PGTest');
+    $self->log_metric($name, $value, $timestamp);
 }
