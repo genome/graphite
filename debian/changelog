@@ -1,3 +1,9 @@
+apipe-metrics-daemon (1.1.17) lucid; urgency=low
+
+  * Show total and free disk space for apipe reference volumes.
+
+ -- Ben Oberkfell <boberkfe@genome.wustl.edu>  Tue, 14 May 2013 15:42:11 -0500
+
 apipe-metrics-daemon (1.1.16-1) lucid; urgency=low
 
   * Set autofs and networking as a service dependency.
