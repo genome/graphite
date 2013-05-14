@@ -397,8 +397,10 @@ sub every_minute {
     # Disk metrics
     $self->log_metric($self->free_disk_space_info_genome_models);
     $self->log_metric($self->free_disk_space_info_alignments);
+    $self->log_metric($self->free_disk_space_info_apipe_ref);
     $self->log_metric($self->total_disk_space_info_genome_models);
     $self->log_metric($self->total_disk_space_info_alignments);
+    $self->log_metric($self->total_disk_space_info_apipe_ref);
     $self->log_metric($self->allocations_needing_reallocating);
 
     # apipe test metrics
@@ -690,6 +692,14 @@ sub free_disk_space_info_alignments {
     return ($name, $value, $timestamp);
 }
 
+sub free_disk_space_info_apipe_ref {
+    my $self = shift;
+    my $name = join('.', 'disk', 'available', 'info_apipe_ref');
+    my $timestamp = DateTime->now->strftime("%s");
+    my $value = $self->get_free_space_for_disk_group('info_apipe_ref');
+    return ($name, $value, $timestamp);
+}
+
 sub get_total_space_for_disk_group {
     my $self = shift;
     my $group = shift;
@@ -718,6 +728,14 @@ sub total_disk_space_info_alignments {
     my $name = join('.', 'disk', 'total', 'info_alignments');
     my $timestamp = DateTime->now->strftime("%s");
     my $value = $self->get_total_space_for_disk_group('info_alignments');
+    return ($name, $value, $timestamp);
+}
+
+sub total_disk_space_info_apipe_ref {
+    my $self = shift;
+    my $name = join('.', 'disk', 'total', 'info_apipe_ref');
+    my $timestamp = DateTime->now->strftime("%s");
+    my $value = $self->get_total_space_for_disk_group('info_apipe_ref');
     return ($name, $value, $timestamp);
 }
 
