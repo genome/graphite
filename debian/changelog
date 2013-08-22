@@ -1,3 +1,9 @@
+apipe-metrics-daemon (1.1.18) lucid; urgency=low
+
+  * Change SQL to work with the PostgreSQL version of GMSchema
+
+ -- Anthony Brummett <abrummet@genome.wustl.edu>  Thu, 22 May 2013 16:28:00 -0500
+
 apipe-metrics-daemon (1.1.17) lucid; urgency=low
 
   * Show total and free disk space for apipe reference volumes.

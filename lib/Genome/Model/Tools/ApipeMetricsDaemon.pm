@@ -433,13 +433,13 @@ sub lims_apipe_bridge {
 
     # NEW instrument data
     my $new = $self->parse_sqlrun_count(
-        q{SELECT COUNT(*) FROM instrument_data_attribute a WHERE attribute_label = 'tgi_lims_status' and attribute_value = 'new'}
+        q{SELECT COUNT(*) FROM instrument.data_attribute a WHERE attribute_label = 'tgi_lims_status' and attribute_value = 'new'}
     );
     $self->log_metric('lims_apipe_bridge.new', $new, $timestamp);
 
     # FAILED instrument data
     my $failed = $self->parse_sqlrun_count(
-        q{SELECT COUNT(*) FROM instrument_data_attribute a WHERE attribute_label = 'tgi_lims_status' and attribute_value = 'failed'}
+        q{SELECT COUNT(*) FROM instrument.data_attribute a WHERE attribute_label = 'tgi_lims_status' and attribute_value = 'failed'}
     );
     $self->log_metric('lims_apipe_bridge.failed', $failed, $timestamp);
 
@@ -481,7 +481,7 @@ sub build_status_by_user {
 
             my $value = $self->parse_sqlrun_count(
                 "select count(e.build_id) builds " .
-                "from mg.genome_model_event e " .
+                "from model.event e " .
                 "where e.event_type = 'genome model build' " .
                 "and e.event_status = '$status' $user_query"
             );
@@ -511,13 +511,13 @@ sub model_status_by_user {
 
             my $value = $self->parse_sqlrun_count(
                 "select count(distinct m.genome_model_id) model_ids " .
-                "from mg.genome_model m " .
+                "from model.model m " .
                 "where exists (" .
-                    "select * from mg.genome_model_build b " .
+                    "select * from model.build b " .
                     "where b.model_id = m.genome_model_id " .
                     "and exists (" .
                         "select * " .
-                        "from mg.genome_model_event e " .
+                        "from model.event e " .
                         "where e.event_type = 'genome model build' " .
                         "and e.build_id = b.build_id " .
                         "and e.event_status = '$status' $user_query" .
@@ -546,13 +546,13 @@ sub pipeline_metrics_by_processing_profile {
 
             my $pp_query = '';
             unless ($pp_id eq 'all') {
-                $pp_query = " and m.processing_profile_id = $pp_id";
+                $pp_query = " and m.processing_profile_id = '$pp_id'";
             }
 
             my $value = $self->parse_sqlrun_count(
                 "select count(e.build_id) builds " .
-                "from mg.genome_model m " .
-                "join mg.genome_model_event e on e.model_id = m.genome_model_id " .
+                "from model.model m " .
+                "join model.event e on e.model_id = m.genome_model_id " .
                 "where e.event_status in ('Running', 'Scheduled', 'New') " .
                 "and e.event_type = 'genome model build' " .
                 "and e.user_name != 'apipe-tester' " .
@@ -636,28 +636,28 @@ sub models_build_requested {
     my $self = shift;
     my $name = join('.', 'models', 'build_requested');
     my $timestamp = DateTime->now->strftime("%s");
-    my $value = $self->parse_sqlrun_count("select count(*) from mg.genome_model gm where gm.build_requested = 1");
+    my $value = $self->parse_sqlrun_count("select count(*) from model.model gm where gm.build_requested = '1'");
     return ($name, $value, $timestamp);
 }
 sub models_build_requested_first_build {
     my $self = shift;
     my $name = join('.', 'models', 'build_requested_first_build');
     my $timestamp = DateTime->now->strftime("%s");
-    my $value = $self->parse_sqlrun_count("select count(*) from mg.genome_model gm where gm.build_requested = 1 and not exists (select * from mg.genome_model_build gmb where gmb.model_id = gm.genome_model_id)");
+    my $value = $self->parse_sqlrun_count("select count(*) from model.model gm where gm.build_requested = '1' and not exists (select * from model.build gmb where gmb.model_id = gm.genome_model_id)");
     return ($name, $value, $timestamp);
 }
 sub models_buildless {
     my $self = shift;
     my $name = join('.', 'models', 'buildless');
     my $timestamp = DateTime->now->strftime("%s");
-    my $value = $self->parse_sqlrun_count("select count(*) from mg.genome_model gm where gm.build_requested != 1 and gm.user_name = 'apipe-builder' and not exists (select * from mg.genome_model_build gmb where gmb.model_id = gm.genome_model_id)");
+    my $value = $self->parse_sqlrun_count("select count(*) from model.model gm where gm.build_requested != '1' and gm.user_name = 'apipe-builder' and not exists (select * from model.build gmb where gmb.model_id = gm.genome_model_id)");
     return ($name, $value, $timestamp);
 }
 sub models_failed {
     my $self = shift;
     my $name = join('.', 'models', 'failed');
     my $timestamp = DateTime->now->strftime("%s");
-    my $value = $self->parse_sqlrun_count("select count(distinct(gm.genome_model_id)) from mg.genome_model gm where exists (select * from mg.genome_model_build gmb where gmb.model_id = gm.genome_model_id and exists (select * from mg.genome_model_event gme where gme.event_type = 'genome model build' and gme.build_id = gmb.build_id and gme.event_status = 'Failed' and gme.user_name = 'apipe-builder'))");
+    my $value = $self->parse_sqlrun_count("select count(distinct(gm.genome_model_id)) from model.model gm where exists (select * from model.build gmb where gmb.model_id = gm.genome_model_id and exists (select * from model.event gme where gme.event_type = 'genome model build' and gme.build_id = gmb.build_id and gme.event_status = 'Failed' and gme.user_name = 'apipe-builder'))");
     return ($name, $value, $timestamp);
 }
 
@@ -666,12 +666,14 @@ sub get_free_space_for_disk_group {
     my $group = shift;
     my $value = $self->parse_sqlrun_count(
         "select cast((sum(greatest(v.unallocated_kb - ceil(least((total_kb * .05), 1073741824)), 0)) / 1073741824) as number(10,4)) free_space " .
-        "from gsc.disk_volume\@oltp v " .
-        "join gsc.disk_volume_group\@oltp dvg on dvg.dv_id = v.dv_id " .
-        "join gsc.disk_group\@oltp g on g.dg_id = dvg.dg_id " .
+        "from gsc.disk_volume v " .
+        "join gsc.disk_volume_group dvg on dvg.dv_id = v.dv_id " .
+        "join gsc.disk_group g on g.dg_id = dvg.dg_id " .
         "where g.disk_group_name = '$group' " .
         "and v.can_allocate = 1 " .
         "and v.disk_status = 'active'"
+
+        ,'Genome::DataSource::Oltp'
     );
     return $value;
 }
@@ -705,12 +707,14 @@ sub get_total_space_for_disk_group {
     my $group = shift;
     my $value = $self->parse_sqlrun_count(
         "select cast((sum(greatest(total_kb - least((total_kb * .05), 1073741824), 0)) / 1073741824) as number(10,4)) total_space " .
-        "from gsc.disk_volume\@oltp v " .
-        "join gsc.disk_volume_group\@oltp dvg on dvg.dv_id = v.dv_id " .
-        "join gsc.disk_group\@oltp g on g.dg_id = dvg.dg_id " .
+        "from gsc.disk_volume v " .
+        "join gsc.disk_volume_group dvg on dvg.dv_id = v.dv_id " .
+        "join gsc.disk_group g on g.dg_id = dvg.dg_id " .
         "where g.disk_group_name = '$group' " .
         "and v.can_allocate = 1 " .
         "and v.disk_status = 'active'"
+
+        ,'Genome::DataSource::Oltp'
     );
     return $value;
 }
@@ -745,8 +749,8 @@ sub allocations_needing_reallocating {
     my $timestamp = DateTime->now->strftime("%s");
     my $value = $self->parse_sqlrun_count(
         "select count(*) " .
-        "from mg.genome_disk_allocation a " .
-        "where a.creation_time < SYSDATE - 7 " .
+        "from disk.allocation a " .
+        "where a.creation_time < current_date - 7 " .
         "and a.reallocation_time is null"
     );
     return ($name, $value, $timestamp);
@@ -756,7 +760,7 @@ sub index_queue_count {
     my ($self, $sql_suffix, $name_suffix) = @_;
     my $name = join('.', 'search', 'index_queue_count');
     my $timestamp = DateTime->now->strftime("%s");
-    my $sql = 'select count(*) from MG.SEARCH_INDEX_QUEUE';
+    my $sql = 'select count(*) from web.search_index_queue';
     if ($sql_suffix && $name_suffix) {
         $name .= ".$name_suffix";
         $sql .= " $sql_suffix";
@@ -772,13 +776,13 @@ sub db_oracle_sessions {
     {
         my $name = join('.', @parent_name, 'total');
         my $timestamp = DateTime->now->strftime("%s");
-        my $value = $self->parse_sqlrun_count(q{select count(sid) from v$session});
+        my $value = $self->parse_sqlrun_count(q{select count(sid) from v$session}, 'Genome::DataSource::OldGMSchemaOracle');
         $self->log_metric($name, $value, $timestamp);
     }
     for my $osuser ('oracle', 'apipe-builder', 'apipe-tester') {
         my $name = join('.', @parent_name, $osuser);
         my $timestamp = DateTime->now->strftime("%s");
-        my $value = $self->parse_sqlrun_count(qq{select count(sid) from v\$session where osuser = '$osuser'});
+        my $value = $self->parse_sqlrun_count(qq{select count(sid) from v\$session where osuser = '$osuser'}, 'Genome::DataSource::OldGMSchemaOracle');
         $self->log_metric($name, $value, $timestamp);
     }
 }
@@ -787,6 +791,6 @@ sub db_postgres_sessions {
     my $self = shift;
     my $name = join('.','db','postgres','sessions');
     my $timestamp = DateTime->now->strftime("%s");
-    my $value = $self->parse_sqlrun_count(q{select count(*) from pg_stat_activity}, 'Genome::DataSource::PGTest');
+    my $value = $self->parse_sqlrun_count(q{select count(*) from pg_stat_activity}, 'Genome::DataSource::GMSchema');
     $self->log_metric($name, $value, $timestamp);
 }
