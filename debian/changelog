@@ -1,3 +1,9 @@
+apipe-metrics-daemon (1.1.19) lucid; urgency=low
+
+  * Use native > operator when filtering on dates
+
+ -- Anthony Brummett <abrummet@genome.wustl.edu>  Tue, 27 Aug 2013 10:38:00 -0500
+
 apipe-metrics-daemon (1.1.18) lucid; urgency=low
 
   * Change SQL to work with the PostgreSQL version of GMSchema
