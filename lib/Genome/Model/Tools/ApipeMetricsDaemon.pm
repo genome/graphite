@@ -224,7 +224,7 @@ sub parse_sqlrun_count {
     my $self = shift;
     my $sql = shift;
 
-    # defaulte to GMSchema but allow override
+    # default to GMSchema but allow override
     my $data_source_class = 'Genome::DataSource::GMSchema';
     $data_source_class = shift if (@_);
 
