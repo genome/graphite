@@ -1,3 +1,9 @@
+apipe-metrics-daemon (1.1.20) lucid; urgency=low
+
+  * Remove Oracle metrics.
+
+ -- Nathaniel Nutter <nnutter@genome.wustl.edu>  Tue, 27 Aug 2013 13:12:32 -0500
+
 apipe-metrics-daemon (1.1.19) lucid; urgency=low
 
   * Use native > operator when filtering on dates
