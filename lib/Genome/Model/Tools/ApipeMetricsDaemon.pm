@@ -411,9 +411,6 @@ sub every_minute {
     $self->log_metric($self->index_queue_count('where priority = 1', 'normal_priority'));
     $self->log_metric($self->index_queue_count('where priority not in (0, 1)', 'low_priority'));
 
-    # Oracle DB Metrics
-    $self->db_oracle_sessions;
-
     # Postgres DB Metrics
     $self->db_postgres_sessions;
 
@@ -767,24 +764,6 @@ sub index_queue_count {
     }
     my $value = $self->parse_sqlrun_count($sql, 'Genome::DataSource::GMSchema');
     return ($name, $value, $timestamp);
-}
-
-sub db_oracle_sessions {
-    my $self = shift;
-
-    my @parent_name = ('db', 'oracle', 'sessions');
-    {
-        my $name = join('.', @parent_name, 'total');
-        my $timestamp = DateTime->now->strftime("%s");
-        my $value = $self->parse_sqlrun_count(q{select count(sid) from v$session}, 'Genome::DataSource::OldGMSchemaOracle');
-        $self->log_metric($name, $value, $timestamp);
-    }
-    for my $osuser ('oracle', 'apipe-builder', 'apipe-tester') {
-        my $name = join('.', @parent_name, $osuser);
-        my $timestamp = DateTime->now->strftime("%s");
-        my $value = $self->parse_sqlrun_count(qq{select count(sid) from v\$session where osuser = '$osuser'}, 'Genome::DataSource::OldGMSchemaOracle');
-        $self->log_metric($name, $value, $timestamp);
-    }
 }
 
 sub db_postgres_sessions {
