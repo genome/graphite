@@ -264,7 +264,7 @@ sub builds_prior_daily_status {
     my @builds = Genome::Model::Build->get(
         run_by => 'apipe-builder',
         status => $status,
-        'date_completed like' => "$date_completed %",
+        'date_completed >' => $date_completed,
     );
     my $value = scalar @builds;
 
@@ -307,11 +307,11 @@ sub builds_prior_hour_status {
     my $name = join('.', 'builds', 'hourly_' . lc($status));
     my $timestamp = $datetime->strftime("%s");
 
-    my $date_completed = $datetime->strftime('%F %H:');
+    my $date_completed = $datetime->strftime('%F %H:00:00');
     my @builds = Genome::Model::Build->get(
         run_by => 'apipe-builder',
         status => $status,
-        'date_completed like' => "$date_completed%",
+        'date_completed >' => $date_completed,
     );
     my $value = scalar @builds;
 
