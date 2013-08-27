@@ -1,3 +1,9 @@
+apipe-metrics-daemon (1.1.21) lucid; urgency=low
+
+  * Restore Oracle metrics but use Dwrac.
+
+ -- Nathaniel Nutter <nnutter@genome.wustl.edu>  Tue, 27 Aug 2013 13:52:22 -0500
+
 apipe-metrics-daemon (1.1.20) lucid; urgency=low
 
   * Remove Oracle metrics.
