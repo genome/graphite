@@ -433,13 +433,13 @@ sub lims_apipe_bridge {
 
     # NEW instrument data
     my $new = $self->parse_sqlrun_count(
-        q{SELECT COUNT(*) FROM instrument.data_attribute a WHERE attribute_label = 'tgi_lims_status' and attribute_value = 'new'}
+        q{SELECT COUNT(DISTINCT(instrument_data_id)) FROM config.instrument_data_analysis_project_bridge WHERE status = 'new'}
     );
     $self->log_metric('lims_apipe_bridge.new', $new, $timestamp);
 
     # FAILED instrument data
     my $failed = $self->parse_sqlrun_count(
-        q{SELECT COUNT(*) FROM instrument.data_attribute a WHERE attribute_label = 'tgi_lims_status' and attribute_value = 'failed'}
+        q{SELECT COUNT(DISTINCT(instrument_data_id)) FROM config.instrument_data_analysis_project_bridge WHERE status = 'failed'}
     );
     $self->log_metric('lims_apipe_bridge.failed', $failed, $timestamp);
 
