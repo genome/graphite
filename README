@@ -1,1 +1,15 @@
-Graphite Config and Cron Scripts
+# apipe-metrics-daemon
+
+This is a command that runs on `apipe-metrics.gsc.wustl.edu` to poll various
+metrics based on SQL queries.
+
+## Updating
+
+1. Commit your changes to Genome::Model::Tools::ApipeMetricsDaemon.
+2. Update the `debian/changelog`.  You can use `dch -v $NEXT_VERSION` to
+   prepare template.
+3. Build the package using standard build tools, e.g. `dpkg-buildpackage`.  We
+   don't worry about dependencies for this package so you don't have to use a VM.
+4. Upload the package using our standard process, e.g. using `dput`.
+5. `apipe-metrics.gsc.wustl.edu` should automatically get updated just as we
+   would expect for `genome-snapshot-deps`.
