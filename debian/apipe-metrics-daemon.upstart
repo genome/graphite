@@ -22,6 +22,6 @@ pre-start script
 end script
 
 script
-    GMT=$(/gsc/scripts/sbin/gsc-cron-user which gmt)
-    exec sudo -i -u $RUN_AS_USER /gsc/scripts/sbin/gsc-cron-user perl -I /usr/share/perl5 $GMT apipe-metrics-daemon --log-file=$LOG_DIR/apipe-metrics-daemon.log
+    GMT=$(/usr/local/bin/apipe-cron which gmt)
+    exec sudo -i -u $RUN_AS_USER /usr/local/bin/apipe-cron perl -I /usr/share/perl5 $GMT apipe-metrics-daemon --log-file=$LOG_DIR/apipe-metrics-daemon.log
 end script
