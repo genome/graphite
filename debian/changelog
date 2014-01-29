@@ -1,6 +1,7 @@
-apipe-metrics-daemon (1.1.22) lucid; urgency=low
+apipe-metrics-daemon (1.1.23) lucid; urgency=low
 
   * Update to use local cron wrapper.
+  * 1.1.22 changelog entry was not committed to repo.
 
  -- Nathaniel Nutter <nnutter@genome.wustl.edu>  Tue, 28 Jan 2014 13:11:18 -0600
 
