@@ -401,7 +401,7 @@ sub every_minute {
     $self->log_metric($self->total_disk_space_info_genome_models);
     $self->log_metric($self->total_disk_space_info_alignments);
     $self->log_metric($self->total_disk_space_info_apipe_ref);
-    $self->log_metric($self->allocations_needing_reallocating);
+    #$self->log_metric($self->allocations_needing_reallocating);
 
     # apipe test metrics
     $self->log_metric($self->perl_test_duration);
