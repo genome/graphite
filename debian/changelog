@@ -1,3 +1,9 @@
+apipe-metrics-daemon (1.1.25) lucid; urgency=low
+
+  * Temporarily disable allocation metric
+
+ -- Adam Coffman <acoffman@genome.wustl.edu>  Mon, 3 Feb 2014 17:38:43 -0600
+
 apipe-metrics-daemon (1.1.24) lucid; urgency=low
 
   * Fix for Upstart crash due to STDOUT text on login shell (apipe-cron).
