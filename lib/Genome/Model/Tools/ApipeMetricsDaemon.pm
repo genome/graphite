@@ -650,7 +650,7 @@ sub models_buildless {
     my $self = shift;
     my $name = join('.', 'models', 'buildless');
     my $timestamp = DateTime->now->strftime("%s");
-    my $value = $self->parse_sqlrun_count("select count(*) from model.model gm where gm.build_requested != '1' and gm.user_name = 'apipe-builder' and not exists (select * from model.build gmb where gmb.model_id = gm.genome_model_id)");
+    my $value = $self->parse_sqlrun_count("select count(*) from model.model gm where gm.build_requested != '1' and gm.run_as = 'apipe-builder' and not exists (select * from model.build gmb where gmb.model_id = gm.genome_model_id)");
     return ($name, $value, $timestamp);
 }
 sub models_failed {
