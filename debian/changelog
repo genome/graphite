@@ -1,3 +1,10 @@
+apipe-metrics-daemon (1.1.26) lucid; urgency=low
+
+  * Update buildless model query to use run_as instead of user_name
+    (deprecated).
+
+ -- Nathaniel Nutter <nnutter@genome.wustl.edu>  Wed, 19 Feb 2014 16:39:24 -0600
+
 apipe-metrics-daemon (1.1.25) lucid; urgency=low
 
   * Temporarily disable allocation metric
