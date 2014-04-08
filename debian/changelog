@@ -1,3 +1,9 @@
+apipe-metrics-daemon (1.1.27) lucid; urgency=low
+
+  * Account for project's hold status in reporting lims_apipe_bridge metrics.
+
+ -- Nathaniel Nutter <nnutter@genome.wustl.edu>  Tue, 08 Apr 2014 15:11:28 -0500
+
 apipe-metrics-daemon (1.1.26) lucid; urgency=low
 
   * Update buildless model query to use run_as instead of user_name
