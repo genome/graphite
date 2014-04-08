@@ -431,20 +431,21 @@ sub lims_apipe_bridge {
     );
     $self->log_metric('lims_apipe_bridge.qidfgm', $value, $timestamp);
 
-    # NEW instrument data
-    my $new = $self->parse_sqlrun_count(
-        q{SELECT COUNT(DISTINCT(instrument_data_id)) FROM config.instrument_data_analysis_project_bridge WHERE status = 'new'}
+    my $select = q(SELECT COUNT(DISTINCT(d.instrument_data_id)) FROM config.instrument_data_analysis_project_bridge AS d JOIN config.analysis_project AS p ON (d.analysis_project_id = p.id));
+    my @cases = (
+        ['new', q(WHERE d.status = 'new' AND p.status != 'Hold')],
+        ['failed', q(WHERE d.status = 'failed' AND p.status != 'Hold')],
+        ['hold', q(WHERE d.status in ('new', 'failed') AND p.status = 'Hold')],
     );
-    $self->log_metric('lims_apipe_bridge.new', $new, $timestamp);
+    my $in_progress_count;
+    for my $case (@cases) {
+        my ($name, $clause) = @$case;
+        my $count = $self->parse_sqlrun_count($select . ' ' . $clause);
+        $self->log_metric("lims_apipe_bridge.$name", $count, $timestamp);
+        $in_progress_count += $count;
+    }
 
-    # FAILED instrument data
-    my $failed = $self->parse_sqlrun_count(
-        q{SELECT COUNT(DISTINCT(instrument_data_id)) FROM config.instrument_data_analysis_project_bridge WHERE status = 'failed'}
-    );
-    $self->log_metric('lims_apipe_bridge.failed', $failed, $timestamp);
-
-    # INPROGRESS (NEW + FAILED) instrument data
-    $self->log_metric('lims_apipe_bridge.inprogress', ($new + $failed), $timestamp);
+    $self->log_metric('lims_apipe_bridge.inprogress', $in_progress_count, $timestamp);
 
     return 1;
 }
