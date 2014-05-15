@@ -1,3 +1,9 @@
+apipe-metrics-daemon (1.1.28) lucid; urgency=low
+
+  * Simplified queries now that status is directly on builds.
+
+ -- Thomas Mooney <tmooney@genome.wustl.edu>  Thu, 15 May 2014 17:01:16 -0500
+
 apipe-metrics-daemon (1.1.27) lucid; urgency=low
 
   * Account for project's hold status in reporting lims_apipe_bridge metrics.
