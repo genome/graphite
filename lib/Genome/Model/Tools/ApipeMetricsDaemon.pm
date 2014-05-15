@@ -474,17 +474,16 @@ sub build_status_by_user {
 
             my $user_query;
             if ($user eq 'all') {
-                $user_query = " and e.user_name != 'apipe-tester'";
+                $user_query = " and b.run_by != 'apipe-tester'";
             }
             else {
-                $user_query = " and e.user_name = '$user'";
+                $user_query = " and b.run_by = '$user'";
             }
 
             my $value = $self->parse_sqlrun_count(
-                "select count(e.build_id) builds " .
-                "from model.event e " .
-                "where e.event_type = 'genome model build' " .
-                "and e.event_status = '$status' $user_query"
+                "select count(b.build_id) builds " .
+                "from model.build b " .
+                "where b.status = '$status' $user_query"
             );
             $self->log_metric($name, $value, $timestamp);
         }
@@ -504,10 +503,10 @@ sub model_status_by_user {
 
             my $user_query;
             if ($user eq 'all') {
-                $user_query = " and e.user_name != 'apipe-tester'";
+                $user_query = " and b.run_by != 'apipe-tester'";
             }
             else {
-                $user_query = " and e.user_name = '$user'";
+                $user_query = " and b.run_by = '$user'";
             }
 
             my $value = $self->parse_sqlrun_count(
@@ -516,13 +515,7 @@ sub model_status_by_user {
                 "where exists (" .
                     "select * from model.build b " .
                     "where b.model_id = m.genome_model_id " .
-                    "and exists (" .
-                        "select * " .
-                        "from model.event e " .
-                        "where e.event_type = 'genome model build' " .
-                        "and e.build_id = b.build_id " .
-                        "and e.event_status = '$status' $user_query" .
-                    ")" .
+                    "and b.status = '$status' $user_query" .
                 ")"
             );
             $self->log_metric($name, $value, $timestamp);
@@ -551,12 +544,11 @@ sub pipeline_metrics_by_processing_profile {
             }
 
             my $value = $self->parse_sqlrun_count(
-                "select count(e.build_id) builds " .
+                "select count(b.build_id) builds " .
                 "from model.model m " .
-                "join model.event e on e.model_id = m.genome_model_id " .
-                "where e.event_status in ('Running', 'Scheduled', 'New') " .
-                "and e.event_type = 'genome model build' " .
-                "and e.user_name != 'apipe-tester' " .
+                "join model.build b on b.model_id = m.genome_model_id " .
+                "where b.status in ('Running', 'Scheduled', 'New') " .
+                "and b.run_by != 'apipe-tester' " .
                 "and m.subclass_name = '$class_name' $pp_query"
             );
             $self->log_metric($name, $value, $timestamp);
@@ -658,7 +650,7 @@ sub models_failed {
     my $self = shift;
     my $name = join('.', 'models', 'failed');
     my $timestamp = DateTime->now->strftime("%s");
-    my $value = $self->parse_sqlrun_count("select count(distinct(gm.genome_model_id)) from model.model gm where exists (select * from model.build gmb where gmb.model_id = gm.genome_model_id and exists (select * from model.event gme where gme.event_type = 'genome model build' and gme.build_id = gmb.build_id and gme.event_status = 'Failed' and gme.user_name = 'apipe-builder'))");
+    my $value = $self->parse_sqlrun_count("select count(distinct(gm.genome_model_id)) from model.model gm where exists (select * from model.build gmb where gmb.model_id = gm.genome_model_id and gmb.status = 'Failed' and gmb.run_by = 'apipe-builder')");
     return ($name, $value, $timestamp);
 }
 
