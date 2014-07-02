@@ -1,3 +1,9 @@
+apipe-metrics-daemon (1.1.29) lucid; urgency=low
+
+  * Report total and max test time from Genome's TestTracker DB.
+
+ -- Nathaniel Nutter <nnutter@genome.wustl.edu>  Wed, 02 Jul 2014 17:51:11 -0500
+
 apipe-metrics-daemon (1.1.28) lucid; urgency=low
 
   * Simplified queries now that status is directly on builds.
