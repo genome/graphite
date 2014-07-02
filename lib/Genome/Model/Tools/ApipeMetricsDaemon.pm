@@ -293,7 +293,31 @@ sub every_hour {
     $self->log_metric($self->builds_hourly_failed);
     $self->log_metric($self->builds_hourly_succeeded);
     $self->log_metric($self->builds_hourly_unstartable);
+    $self->log_metric($self->genome_test_tracker_time);
     return 1;
+}
+
+sub genome_test_tracker_time {
+    my $user = $ENV{GENOMEX_DS_TEST_TRACKER_LOGIN};
+    my $pass = $ENV{GENOMEX_DS_TEST_TRACKER_AUTH};
+    my $dsn = 'dbi:Pg:' . ($ENV{GENOMEX_DS_TEST_TRACKER_SERVER} || '');
+
+    my $dbh = DBI->connect($dsn, $user, $pass, { PrintError => 0 });
+    unless ($dbh) {
+        return;
+    }
+
+    my $sql = 'select sum(duration), max(duration) from test_tracker.test';
+    my $results = $dbh->selectrow_arrayref($sql);
+    unless ($results) {
+        die $dbh->errstr;
+    }
+
+    my $timestamp = DateTime->now->strftime("%s");
+    return (
+        'test_tracker.genome.total_time', $results->[0], $timestamp,
+        'test_tracker.genome.max_time',   $results->[1], $timestamp,
+    );
 }
 
 sub builds_prior_hour_status {
