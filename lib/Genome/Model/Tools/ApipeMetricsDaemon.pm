@@ -236,6 +236,21 @@ sub parse_sqlrun_count {
     return $results->[0];
 }
 
+sub eval_metrics {
+    my $self = shift;
+    my @m    = @_;
+
+    for my $m (@m) {
+        my @metrics = eval { $self->$m };
+        if (my $error = $@) {
+            $self->_logger->error(sprintf('%s: %s', $m, $error));
+        }
+        if (@metrics) {
+            $self->log_metric(@metrics);
+        }
+    }
+}
+
 ###################
 #### Every Day ####
 ###################
@@ -243,9 +258,7 @@ sub parse_sqlrun_count {
 sub every_day {
     my $self = shift;
     $self->_logger->info('every_day');
-    $self->log_metric($self->builds_daily_failed);
-    $self->log_metric($self->builds_daily_succeeded);
-    $self->log_metric($self->builds_daily_unstartable);
+    $self->eval_metrics(qw(builds_daily_failed builds_daily_succeeded builds_daily_unstartable));
     return 1;
 }
 
@@ -290,10 +303,7 @@ sub builds_daily_unstartable {
 sub every_hour {
     my $self = shift;
     $self->_logger->info('every_hour');
-    $self->log_metric($self->builds_hourly_failed);
-    $self->log_metric($self->builds_hourly_succeeded);
-    $self->log_metric($self->builds_hourly_unstartable);
-    $self->log_metric($self->genome_test_tracker_time);
+    $self->eval_metrics(qw(builds_hourly_failed builds_hourly_succeeded builds_hourly_unstartable genome_test_tracker_time));
     return 1;
 }
 
@@ -401,34 +411,31 @@ sub every_minute {
     # LIMS - APIPE Bridge
     $self->lims_apipe_bridge;
 
-    # LSF metrics
-    $self->log_metric($self->lsf_all_apipe_builder);
-    $self->log_metric($self->lsf_all_non_apipe_builder);
-    $self->log_metric($self->lsf_all_non_apipe_builder_apipe_queues);
-    $self->log_metric($self->lsf_workflow_run);
-    $self->log_metric($self->lsf_workflow_pend);
-    $self->log_metric($self->lsf_alignment_run);
-    $self->log_metric($self->lsf_alignment_pend);
-    $self->log_metric($self->lsf_blades_run);
-    $self->log_metric($self->lsf_blades_pend);
+    $self->eval_metrics(qw(
+        lsf_all_apipe_builder
+        lsf_all_non_apipe_builder
+        lsf_all_non_apipe_builder_apipe_queues
+        lsf_workflow_run
+        lsf_workflow_pend
+        lsf_alignment_run
+        lsf_alignment_pend
+        lsf_blades_run
+        lsf_blades_pend
 
-    # Model metrics
-    $self->log_metric($self->models_build_requested);
-    $self->log_metric($self->models_build_requested_first_build);
-    $self->log_metric($self->models_buildless);
-    $self->log_metric($self->models_failed);
+        models_build_requested
+        models_build_requested_first_build
+        models_buildless
+        models_failed
 
-    # Disk metrics
-    $self->log_metric($self->free_disk_space_info_genome_models);
-    $self->log_metric($self->free_disk_space_info_alignments);
-    $self->log_metric($self->free_disk_space_info_apipe_ref);
-    $self->log_metric($self->total_disk_space_info_genome_models);
-    $self->log_metric($self->total_disk_space_info_alignments);
-    $self->log_metric($self->total_disk_space_info_apipe_ref);
-    #$self->log_metric($self->allocations_needing_reallocating);
+        free_disk_space_info_genome_models
+        free_disk_space_info_alignments
+        free_disk_space_info_apipe_ref
+        total_disk_space_info_genome_models
+        total_disk_space_info_alignments
+        total_disk_space_info_apipe_ref
 
-    # apipe test metrics
-    $self->log_metric($self->perl_test_duration);
+        perl_test_duration
+    ));
 
     # search metrics
     $self->log_metric($self->index_queue_count('where priority = 0', 'high_priority'));
