@@ -23,5 +23,5 @@ end script
 
 script
     GMT=$(/usr/local/bin/apipe-cron which gmt | tail -n 1)
-    exec sudo -i -u $RUN_AS_USER /usr/local/bin/apipe-cron genome-perl -I /usr/share/perl5 $GMT apipe-metrics-daemon --log-file=$LOG_DIR/apipe-metrics-daemon.log
+    exec sudo -i -u $RUN_AS_USER /usr/local/bin/apipe-cron genome-perl $GMT apipe-metrics-daemon --log-file=$LOG_DIR/apipe-metrics-daemon.log
 end script
