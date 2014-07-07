@@ -1,3 +1,9 @@
+apipe-metrics-daemon (1.1.30) lucid; urgency=low
+
+  * Partial protection against exceptions.
+
+ -- Nathaniel Nutter <nnutter@genome.wustl.edu>  Mon, 07 Jul 2014 17:37:19 -0500
+
 apipe-metrics-daemon (1.1.29) lucid; urgency=low
 
   * Report total and max test time from Genome's TestTracker DB.
