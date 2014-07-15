@@ -1,3 +1,9 @@
+apipe-metrics-daemon (1.1.31) lucid; urgency=low
+
+  * Fix crash due to mix of Perl version and library version.
+
+ -- Nathaniel Nutter <nnutter@genome.wustl.edu>  Mon, 07 Jul 2014 18:16:29 -0500
+
 apipe-metrics-daemon (1.1.30) lucid; urgency=low
 
   * Partial protection against exceptions.
