@@ -464,9 +464,10 @@ sub lims_apipe_bridge {
 
     my $select = q(SELECT COUNT(DISTINCT(d.instrument_data_id)) FROM config.instrument_data_analysis_project_bridge AS d JOIN config.analysis_project AS p ON (d.analysis_project_id = p.id));
     my @cases = (
-        ['new', q(WHERE d.status = 'new' AND p.status != 'Hold')],
-        ['failed', q(WHERE d.status = 'failed' AND p.status != 'Hold')],
+        ['new', q(WHERE d.status = 'new' AND p.status NOT IN ('Hold', 'Pending'))],
+        ['failed', q(WHERE d.status = 'failed' AND p.status NOT IN ('Hold', 'Pending'))],
         ['hold', q(WHERE d.status in ('new', 'failed') AND p.status = 'Hold')],
+        ['pending', q(WHERE d.status in ('new', 'failed') AND p.status = 'Pending')],
     );
     my $in_progress_count;
     for my $case (@cases) {
