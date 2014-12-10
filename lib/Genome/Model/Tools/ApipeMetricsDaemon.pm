@@ -187,7 +187,8 @@ sub log_metric {
         my $log_value = $value . ' 'x(15 - length($value));
         $self->_logger->info(join("\t", $log_name, $log_value, $timestamp));
         if ($graphite) {
-            $graphite->send($name, $value, $timestamp); # how do we check for success asynchronously?
+            my $prefixed_name = 'apipe.' . $name;
+            $graphite->send($prefixed_name, $value, $timestamp); # how do we check for success asynchronously?
         }
     }
     return 1;
