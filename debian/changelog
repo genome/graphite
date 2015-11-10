@@ -1,3 +1,10 @@
+apipe-metrics-daemon (1.1.34) lucid; urgency=low
+
+  * Only report new/pending data that is in an "In Progress" project.
+  * Includes changes from missing version 1.1.33.
+
+ -- Thomas Mooney <tmooney@genome.wustl.edu>  Tue, 10 Nov 2015 12:44:34 -0600
+
 apipe-metrics-daemon (1.1.32) lucid; urgency=low
 
   * Add metric for "pending" instrument data.
