@@ -431,9 +431,11 @@ sub every_minute {
         free_disk_space_info_genome_models
         free_disk_space_info_alignments
         free_disk_space_info_apipe_ref
+        free_disk_space_prod_builder
         total_disk_space_info_genome_models
         total_disk_space_info_alignments
         total_disk_space_info_apipe_ref
+        total_disk_space_prod_builder
 
         perl_test_duration
     ));
@@ -712,6 +714,14 @@ sub free_disk_space_info_genome_models {
     return ($name, $value, $timestamp);
 }
 
+sub free_disk_space_prod_builder {
+    my $self = shift;
+    my $name = join('.', 'disk', 'available', 'prod-builder');
+    my $timestamp = DateTime->now->strftime("%s");
+    my $value = $self->get_free_space_for_disk_group('prod-builder');
+    return ($name, $value, $timestamp);
+}
+
 sub free_disk_space_info_alignments {
     my $self = shift;
     my $name = join('.', 'disk', 'available', 'info_alignments');
@@ -750,6 +760,14 @@ sub total_disk_space_info_genome_models {
     my $name = join('.', 'disk', 'total', 'info_genome_models');
     my $timestamp = DateTime->now->strftime("%s");
     my $value = $self->get_total_space_for_disk_group('info_genome_models');
+    return ($name, $value, $timestamp);
+}
+
+sub total_disk_space_prod_builder {
+    my $self = shift;
+    my $name = join('.', 'disk', 'total', 'prod-builder');
+    my $timestamp = DateTime->now->strftime("%s");
+    my $value = $self->get_total_space_for_disk_group('prod-builder');
     return ($name, $value, $timestamp);
 }
 
