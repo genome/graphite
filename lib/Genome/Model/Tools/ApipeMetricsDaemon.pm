@@ -276,7 +276,7 @@ sub builds_prior_daily_status {
 
     my $date_completed = $datetime->strftime('%F');
     my @builds = Genome::Model::Build->get(
-        run_by => 'apipe-builder',
+        run_by => ['apipe-builder', 'prod-builder'],
         status => $status,
         'date_completed >' => $date_completed,
     );
@@ -344,7 +344,7 @@ sub builds_prior_hour_status {
 
     my $date_completed = $datetime->strftime('%F %H:00:00');
     my @builds = Genome::Model::Build->get(
-        run_by => 'apipe-builder',
+        run_by => ['apipe-builder', 'prod-builder'],
         status => $status,
         'date_completed >' => $date_completed,
     );
@@ -376,12 +376,12 @@ sub every_minute {
     # Build metrics
     $self->build_status_by_user(
         status => ['New', 'Failed', 'Running', 'Scheduled', 'Succeeded', 'Unstartable'],
-        user => ['apipe-builder', 'all'],
+        user => ['prod-builder', 'apipe-builder', 'all'],
     );
 
     $self->model_status_by_user(
         status => ['Running', 'Scheduled', 'Failed', 'Unstartable'],
-        user => ['apipe-builder', 'all'],
+        user => ['prod-builder', 'apipe-builder', 'all'],
     );
 
     $self->pipeline_metrics_by_processing_profile(
@@ -678,14 +678,14 @@ sub models_buildless {
     my $self = shift;
     my $name = join('.', 'models', 'buildless');
     my $timestamp = DateTime->now->strftime("%s");
-    my $value = $self->parse_sqlrun_count("select count(*) from model.model gm where gm.build_requested != '1' and gm.run_as = 'apipe-builder' and not exists (select * from model.build gmb where gmb.model_id = gm.genome_model_id)");
+    my $value = $self->parse_sqlrun_count("select count(*) from model.model gm where gm.build_requested != '1' and gm.run_as in ('apipe-builder', 'prod-builder') and not exists (select * from model.build gmb where gmb.model_id = gm.genome_model_id)");
     return ($name, $value, $timestamp);
 }
 sub models_failed {
     my $self = shift;
     my $name = join('.', 'models', 'failed');
     my $timestamp = DateTime->now->strftime("%s");
-    my $value = $self->parse_sqlrun_count("select count(distinct(gm.genome_model_id)) from model.model gm where exists (select * from model.build gmb where gmb.model_id = gm.genome_model_id and gmb.status = 'Failed' and gmb.run_by = 'apipe-builder')");
+    my $value = $self->parse_sqlrun_count("select count(distinct(gm.genome_model_id)) from model.model gm where exists (select * from model.build gmb where gmb.model_id = gm.genome_model_id and gmb.status = 'Failed' and gm.run_as in ('apipe-builder', 'prod-builder')");
     return ($name, $value, $timestamp);
 }
 

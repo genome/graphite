@@ -1,3 +1,9 @@
+apipe-metrics-daemon (1.1.36) lucid; urgency=low
+
+  * adding metrics for prod-builder user to graphite
+
+ -- Thomas Mooney <tmooney@genome.wustl.edu>  Tue, 08 Feb 2016 17:51:34 -0600
+
 apipe-metrics-daemon (1.1.35) lucid; urgency=low
 
   * adding metrics for prod-builder disk group to graphite
