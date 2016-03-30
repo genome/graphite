@@ -685,7 +685,7 @@ sub models_failed {
     my $self = shift;
     my $name = join('.', 'models', 'failed');
     my $timestamp = DateTime->now->strftime("%s");
-    my $value = $self->parse_sqlrun_count("select count(distinct(gm.genome_model_id)) from model.model gm where exists (select * from model.build gmb where gmb.model_id = gm.genome_model_id and gmb.status = 'Failed' and gm.run_as in ('apipe-builder', 'prod-builder')");
+    my $value = $self->parse_sqlrun_count("select count(distinct(gm.genome_model_id)) from model.model gm where exists (select * from model.build gmb where gmb.model_id = gm.genome_model_id and gmb.status = 'Failed' and gm.run_as in ('apipe-builder', 'prod-builder'))");
     return ($name, $value, $timestamp);
 }
 
