@@ -1,3 +1,9 @@
+apipe-metrics-daemon (1.1.38) lucid; urgency=low
+
+  * switch graphite-relay hostname
+
+ -- Thomas Mooney <tmooney@genome.wustl.edu>  Thu, 09 Feb 2017 14:11:51 -0600
+
 apipe-metrics-daemon (1.1.37) lucid; urgency=low
 
   * fix typo in query
