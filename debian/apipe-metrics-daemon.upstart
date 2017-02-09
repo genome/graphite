@@ -22,5 +22,5 @@ pre-start script
 end script
 
 script
-    exec sudo -i -u $RUN_AS_USER /usr/local/bin/apipe-cron genome-perl -S gmt apipe-metrics-daemon --log-file=$LOG_DIR/apipe-metrics-daemon.log --graphite-host=graphite-relay2.gsc.wustl.edu
+    exec sudo -i -u $RUN_AS_USER /usr/local/bin/apipe-cron genome-perl -S gmt apipe-metrics-daemon --log-file=$LOG_DIR/apipe-metrics-daemon.log --graphite-host=graphite-relay.gsc.wustl.edu
 end script
