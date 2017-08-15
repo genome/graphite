@@ -1,3 +1,9 @@
+apipe-metrics-daemon (1.1.39) lucid; urgency=low
+
+  * remove oracle session metrics
+
+ -- Thomas Mooney <tmooney@genome.wustl.edu>  Tue, 15 Aug 2017 17:27:50 -0500
+
 apipe-metrics-daemon (1.1.38) lucid; urgency=low
 
   * switch graphite-relay hostname
