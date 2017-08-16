@@ -690,7 +690,7 @@ sub get_free_space_for_disk_group {
     my $self = shift;
     my $group = shift;
     my $value = $self->parse_sqlrun_count(
-        "select cast((sum(greatest(v.unallocated_kb - ceil(least((total_kb * .05), 1073741824)), 0)) / 1073741824) as number(10,4)) free_space " .
+        "select cast((sum(greatest(v.unallocated_kb - ceil(least((total_kb * .05), 1073741824)), 0)) / 1073741824) as numeric(10,4)) free_space " .
         "from gsc.disk_volume v " .
         "join gsc.disk_volume_group dvg on dvg.dv_id = v.dv_id " .
         "join gsc.disk_group g on g.dg_id = dvg.dg_id " .
@@ -739,7 +739,7 @@ sub get_total_space_for_disk_group {
     my $self = shift;
     my $group = shift;
     my $value = $self->parse_sqlrun_count(
-        "select cast((sum(greatest(total_kb - least((total_kb * .05), 1073741824), 0)) / 1073741824) as number(10,4)) total_space " .
+        "select cast((sum(greatest(total_kb - least((total_kb * .05), 1073741824), 0)) / 1073741824) as numeric(10,4)) total_space " .
         "from gsc.disk_volume v " .
         "join gsc.disk_volume_group dvg on dvg.dv_id = v.dv_id " .
         "join gsc.disk_group g on g.dg_id = dvg.dg_id " .

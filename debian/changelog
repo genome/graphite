@@ -1,3 +1,9 @@
+apipe-metrics-daemon (1.1.40) lucid; urgency=low
+
+  * convert casts to use "numeric" instead of "number"
+
+ -- Thomas Mooney <tmooney@genome.wustl.edu>  Wed, 16 Aug 2017 10:31:34 -0500
+
 apipe-metrics-daemon (1.1.39) lucid; urgency=low
 
   * remove oracle session metrics
